@@ -1,0 +1,11 @@
+bin
+win
+szg*.tar.gz
+grammar.c
+grammar.h
+patterns.c
+tNum
+tNum.exe
+vars
+vars.exe
+Release.txt

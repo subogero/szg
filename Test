@@ -1,0 +1,18 @@
+#!/usr/bin/szg
+# Test script for szg.
+# Invoke: "szg Test" or simply "./Test"
+# It shall produce the following output:
+# 42
+# 42
+# 42
+
+# 42 hex
+11*3*2 x
+
+# 42 oct
+ F*2+4 o # Leading space
+
+# 42 dec
+	52 d # Leading tab
+
+	# Leading tab and comment

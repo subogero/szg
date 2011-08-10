@@ -1,0 +1,244 @@
+.TH SZG 1 "Distributed under GNU GPL v3" "(c) SZABO Gergely"
+.SH NAME
+szg \- SZámolóGép (Hungarian for calculator) written by SzG
+.SH SYNOPSIS
+szg [-bodxnsfp] [FILE] | [-h] | [-V]
+.br
+szg -[bodxnsfp]e EXPR
+.SH USAGE
+Options:
+.br
+\-h --help     display usage and exit
+.br
+\-V --version  display version information and exit
+.PP
+Commands:
+.br
+-b start in binary I/O mode
+.br
+-o start in octal I/O mode
+.br
+-d start in decimal I/O mode (default)
+.br
+-x start in hexadecimal I/O mode
+.PP
+-n start in unsigned (natural) calculation mode
+.br
+-s start in signed calculation mode (default)
+.br
+-f start in floating-point calculation mode
+.PP
+-p toggle prompt
+.PP
+-e treat the rest of the command line as expression
+.br
+FILE input file, stdin used if not specified.
+.PP
+Any combination of commands is allowed, last command wins in case of conflict.
+E.g. szg -xnods starts in signed decimal mode.
+.br
+Unknown options and commands are ignored without a warning.
+.SH BACKGROUND
+.B szg
+is a command line calculator, originally for integer arithmetics, inspired by
+.BR bc (1),
+desktop calculators and microcontroller programming. Micros often lack
+floating-point support, so all calculations are integer-based. During
+debugging, one often wishes to simulate calculations with a desktop/GUI
+calculator, only to find everything going floating-point after the first
+division. That's where
+.BR bc (1)
+comes into the picture. But it has no hexadecimal support and its workflow
+is rather cumbersome. Adding 2 to a previous result cannot be done with
+simply typing
+.BR "+ 2 Enter" .
+And how many times have you mistyped something on a desktop calculator
+wishing to undo the last operation? Or wished to have more than one memory?
+.PP
+Floating point support is available as well.
+.SH DESCRIPTION
+The main requirements for
+.BR szg (1)
+are:
+.br
+\- command line interface with previous results visible on the screen
+.br
+\- unlimited undo
+.br
+\- decimal, binary, octal and hexadecimal I/O modes
+.br
+\- signed and unsigned integer calculation modes
+.br
+\- floating point mode only upon user request, never upon division
+.br
+\- ability to go on from previous result with incomplete expression
+.br
+\- a fair amount of memory registers with intuitive use
+.PP
+.BR szg (1)
+takes expressions, assignments and commands on stdin and writes the results
+to stdout or the specified output FILE upon pressing
+.BR Enter .
+.SS EXPRESSIONS
+.BR szg (1)
+expressions are built of numbers
+.B [0-9A-F.]+
+variables
+.B [G-Z]
+last result
+.B _
+and operators listed below in descending precedence:
+.br
+.B ()
+\   brackets to override operator precedence
+.br
+.B ~ @x
+\ prefix operators        : unary minus, math functions
+.br
+.B */%&
+\ multiplicative operators: multiply, divide, modulo, bitwise AND
+.br
+.B +-|
+\  additive operators      : add, substract, bitwise OR
+.PP
+Math functions:
+.B @s @c @a @l @e @r
+= sin cos atan log exp sqrt
+.PP
+Incomplete expressions are where a number is missing from
+between operators. The last result
+.B _
+is used automatically instead.
+.br
+The ultimate incomplete expression is the empty string, meaning the last result.
+.PP
+Attention with unary minus:
+.br
+.B \-expr
+means substracting expr from the last result
+.B _-expr
+, not the negation of expr.
+For unary minus use the
+.B ~
+(tilde) operator.
+.SS Floating point support
+Floating point numbers can be entered in non-scientific form only.
+Examples:
+.B 2.3  .0456
+.PP
+Floting point mode is activated according to the following rules:
+.br
+\- never upon division
+.br
+\- implicitly, if an entered expression contains a float-format number
+.br
+\- explicitly, with command f
+.PP
+Floating point numbers are displayed in scientific format only if necessary.
+Switching to floating-point implies switching to decimal I/O mode.
+Once in float mode, the commands
+.B b o x
+(binary, octal, hexadecimal) set binary output-mode only, input mode remains decimal.
+.PP
+Switching back from floating-point mode to either signed or unsigned integer mode
+works with the commands
+.B s
+and
+.B n
+, respectively.
+.SS ASSIGNMENTS
+.BR szg (1)
+assignments are in the form of
+.BR [G-Z]=expr .
+The expr may be incomplete, including the ulimate incomplete expression, the
+empty string, thus
+.B X=
+assigns the last result to X.
+.SS COMMANDS
+Commands are single lowercase letters.
+.PP
+b binary I/O mode
+.br
+o octal I/O mode
+.br
+d decimal I/O mode
+.br
+x hexadecimal I/O mode
+.PP
+n unsigned (natural number) calculation mode
+.br
+s signed calculation mode
+.br
+f floating-point calculation mode
+.PP
+p toggle prompt
+.br
+u undo, unlimited depth, no redo
+.br
+q or ^D (EOF Unix) or ^C (interrupt) to quit
+.PP
+Signed / unsigned calculation modes affect only */% operations and decimal
+IO, nothing else.
+.PP
+By default, a prompt is indicating IO and calculation mode,
+if input is coming from a terminal (no pipe, no input file).
+.PP
+Undo does remember changes in calculation or I/O mode.
+.SS COMPOUNDS
+.BR szg (1)
+accepts combinations of expressions or statements with a leading or trailing command or both.
+For example
+.B x FFFE+1 d
+switches to hex mode temporarily to evaluate  FFFE+1 then displays the result 65535 in decimal.
+.SS COMMENTS
+Comments between
+.B #
+and end-of-line.
+.SH DIAGNOSTICS
+.BR szg (1)
+prints diagnostic messages to stderr, thus they appear on the terminal by
+default. After the error
+.BR szg (1)
+may ignore the entire input line, or just the wrong part of it, or even
+replace the wrong part with the last result.
+Don't forget to undo in suspicious cases. Worse is better.
+.SS syntax error
+The entered expression cannot be parsed
+.SS unknown command
+Entered lowercase letter does not correspond to a known command
+.SS unknown function
+Unimplemented @x sequence (function)
+.SS division by zero
+Attempt at division by zero
+.SS float modulo
+Attempt at modulo
+.B %
+operation on a floating-point number
+.SS n.a. for negative
+Attempt at math functions @l @r (log sqrt) for a negative number
+.SS n.a. for zero
+Attempt at math function @l (log) for zero
+.SS unable to parse number
+When entering 1.2.3 or 12 in binary mode or 12.34FF in float mode
+.SH SEE ALSO
+.BR lex (1),
+.BR yacc (1),
+.BR bc (1).
+.SH AUTHOR
+SZABO Gergely
+.B <szg@subogero.com>
+.br
+Respect to
+.B Stephen C. Johnson
+the creator of
+.BR yacc (1).
+.SH COPYRIGHT
+This is free software, distributed under the GNU GPL v3 license.
+.br
+There is absolutely no warranty.
+.SH BUG REPORTS
+Please send bug reports to the email address above, include
+.B szg
+in the Subject field. Or visit
+.B http://subogero.dyndns.org/git/szg.html
+Patches welcome!

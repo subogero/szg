@@ -1,0 +1,61 @@
+szg is a command line calculator with an extremely fast and intuitive workflow.
+
+Features
+--------
+32-bit integer or floating-point arithmetic
+Decimal, binary, octal or hexadecimal format (commands d, b, o, x)
+Input:
+  szg           - expressions, variable assignments and commands on stdin
+  szg <FILE>    - from file specified on command line
+  szg -e <expr> - expression directly from the command line
+Output of calculations on stdout
+Prompt indicating integer/float and bin/oct/dec/hex mode
+Error messages (syntax error, division by zero) or stderr
+Unlimited undo
+Fair amount of memory registers (G .. Z)
+User defined variables like $FOO
+Operators ()~ */% +- &| =   ATTENTION: unary minus is ~ (tilde)
+Symbol _ means last result, like Perl/Python
+Missing identifier means _ (+5 means last result + 5) like Perl
+Math functions @s @c @a @l @e @r = sin cos atan log exp sqrt
+Optional unsigned arithmetic (commands n, s)
+Floating-point mode never upon division, only upon user request, like Python
+Combination if expressions/commands on same line
+Comments starting with #
+Manual page
+
+Compilation Instructions
+------------------------
+It can be compiled and installed on Linux or Windows/cygwin.
+Packages needed: gcc, make, flex, bison, mingw32
+On Windows, it runs both in cygwin and Windows command line windows.
+$ make
+$ sudo make install # installs to /usr/bin (and C:\WINDOWS on Cygwin)
+
+Installation of Binaries
+------------------------
+The tarball from http://subogero.dyndns.org/git/tarballs.pl contains
+compiled Linux and Windows binaries as well.
+
+Download and extract in a new directory.
+Open a cygwin/terminal window there;
+Call “make install” or “sudo make install” (Linux)
+Or simply copy win/szg.exe to C:\WINDOWS if you don't have Cygwin.
+
+Examples
+--------
+d xFFFFd  # Convert hexadecimal to decimal
+65535
+d 4+3     # Addition
+7
+d *       # Both operands missing, means 7*7
+49
+d /2      # integer division result remains integer
+24
+d /5.0    # floating point division upon request
+4.8
+f @r      # square root, missing operand, means @r(4.8)
+2.19089
+f b       # prompt shows float mode, look how bits are stored in memory
+01000000,00001100,00110111,10001100
+f $FOO=   # store in variable $FOO

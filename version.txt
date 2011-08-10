@@ -1,0 +1,5 @@
+szg - OG's Calculator - version 6.0
+
+Free software, distributed under the GNU GPL v3 license
+(c) SZABO Gergely, 2009-2011
+There is absolutely no warranty.

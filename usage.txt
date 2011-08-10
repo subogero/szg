@@ -1,0 +1,48 @@
+Usage: szg [-bodxnsfp] [FILE] | [-h] | [-V]
+       szg -[bodxnsfp]e EXPR
+  -h --help    shows usage and exits
+  -V --version shows version info and exits
+  -b start in I/O mode binary
+  -o start in I/O mode octal
+  -d start in I/O mode decimal (default)
+  -x start in I/O mode hexadecimal
+  -n start in calculation mode unsigned (natural number)
+  -s start in calculation mode signed   (default)
+  -f start in calculation mode floating-point
+  -p toggle prompt
+  -e treat the rest of command line as expression
+
+Command line calculator for 32-bit integers and floats.
+Accepts the following constructs from stdin or input FILE if specified
+or directly as command line arguments after as -e EXPR:
+- math expressions built of .0-9A-F G-Z _ |&+-*/ @x ~ (), eg. 2*(2-5)
+  A-F are used for numbers in hexadecimal mode
+  G-Z are predefined variables
+  _   is the result of the last operation
+- operator precedence: (), ~, */%&, +-|
+- math functions @s @c @a @l @e @r: sin cos atan log exp sqrt
+- assignments to variables G-Z in form of X=expression
+- Commands
+- Compounds of statements and leading or trailing commands
+- whitespaces are ignored (not allowed within numbers)
+- Comments between # and end-of-line
+
+Incomplete expressions and assignments (desktop calculator workflow):
+  Missing numbers are replaced by _ (last result), e.g X=*(+2) means X=_*(_+2)
+  Unary minus is ~expr (tilde), -expr is interpreted as _-expr.
+
+Floating point support:
+  Floating-point numbers are accepted only in non-scientific form.
+  szg stays in integer mode, until you explicitely switch to float mode
+  with command f, or implicitly enter a float-format number (e.g. 2.3)
+  as part of an expression. A division does NOT switch to float mode.
+  Swithing to float activates decimal I/O mode implicitly.
+
+Commands:
+  Single lower-case letters, same as the command line options, except h and V.
+  Command p toggles the prompt.
+  Use command q or ^D (EOF on Unix) or ^C (interrupt) to exit.
+
+See man szg for more details.
+
+Bug reports to <szg@subogero.com>, include 'szg' in Subject field.
