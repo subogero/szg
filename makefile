@@ -57,7 +57,7 @@ endif
 
 TMPF   := patterns.c grammar.c grammar.h tNumTest arg1/usage.h arg1/version.h *~ *.tar.gz
 
-MANPAGE:= szg.1.gz
+MANPAGE:= szg.1
 MAN    := /usr/share/man/man1
 
 
