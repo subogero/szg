@@ -20,14 +20,15 @@ static void dbug(char* token);
 %%
 #.*$        ;
 [ \t]       ;
-[a-z]       { print_on(); yylval.u8 = *yytext - 'a';                       dbug("COMMAND"); return COMMAND; }
-[G-Z]       { print_on(); yylval.u8 = *yytext - 'G';                       dbug("LETTER");  return LETTER; }
+[A-Z]       { print_on(); yylval.u8 = *yytext - 'A';                       dbug("COMMAND"); return COMMAND; }
+\\[a-z]     { print_on(); yylval.u8 = yytext[1] - 'a';                     dbug("COMMAND"); return COMMAND; }
+[g-z]       { print_on(); yylval.u8 = *yytext - 'g';                       dbug("LETTER");  return LETTER; }
 [-+|]       { print_on(); yylval.u8 = *yytext;                             dbug("OPADD");   return OPADD; }
 [*/%&]      { print_on(); yylval.u8 = *yytext;                             dbug("OPMUL");   return OPMUL; }
 ~           { print_on(); yylval.u8 = *yytext;                             dbug("OPPRE");   return OPPRE; }
 @[a-z]      { print_on(); yylval.u8 = yytext[1];                           dbug("OPPRE");   return OPPRE; }
-\$[A-Z]+    { print_on(); yylval.id = vars_alloc(yytext);                  dbug("VAR");     return VAR; }
-[0-9A-F.,]+ { print_on(); tNumParse(&output, yytext); yylval.Num = output; dbug("NUMBER");  return NUMBER; }
+\$[a-z]+    { print_on(); yylval.id = vars_alloc(yytext);                  dbug("VAR");     return VAR; }
+[0-9a-f.,]+ { print_on(); tNumParse(&output, yytext); yylval.Num = output; dbug("NUMBER");  return NUMBER; }
 .           { print_on();                                                  dbug("u8");      return *yytext; }
 \n          {                                                              dbug("LF");      return *yytext; }
 

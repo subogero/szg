@@ -166,9 +166,9 @@ void tNumPrint(struct tNum* this, int num, int prompt, char base) {
     2,        8,        10,       16
   };
   static const char* formats[] = {
-    "%B\n",   "%o\n",   "%u\n",   "%X\n",   // natural
-    "%B\n",   "%o\n",   "%d\n",   "%X\n",   // signed
-    "%B\n",   "%o\n",   "%g\n",   "%X\n",   // float
+    "%B\n",   "%o\n",   "%u\n",   "%x\n",   // natural
+    "%B\n",   "%o\n",   "%d\n",   "%x\n",   // signed
+    "%B\n",   "%o\n",   "%g\n",   "%x\n",   // float
   };
   static const char* prompts[] = {
     "B ",     "O ",     "D ",     "X ",
