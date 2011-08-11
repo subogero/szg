@@ -148,10 +148,11 @@ release: commit
 	$(MAKE) tarball TAG=-$$TAG
 
 publish:
-	REMOTES=`git remote -v | sed -rn 's/^(.+)\t[^ ]+ \(push\)$$/\1/p'`; \
+	@REMOTES=`git remote -v | sed -rn 's/^(.+)\t[^ ]+ \(push\)$$/\1/p'`; \
 	ORIGIN=`git remote -v \
-	| sed -rn 's,^origin\t(ssh://)?(.+)/szg\.git \(push\)$$,\2,p'\
+	| sed -rn 's,^origin\t(ssh://)?(.+)szg\.git \(push\)$$,\2,p'\
 	| sed 's,/~,:,'`; \
 	for REMOTE in $$REMOTES; do git push --mirror $$REMOTE; done; \
 	$(MAKE) tarball; \
+	echo scp to origin: $$ORIGIN; \
 	scp *.tar.gz $$ORIGIN
