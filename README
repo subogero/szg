@@ -12,13 +12,13 @@ Output of calculations on stdout
 Prompt indicating integer/float and bin/oct/dec/hex mode
 Error messages (syntax error, division by zero) or stderr
 Unlimited undo
-Fair amount of memory registers (G .. Z)
-User defined variables like $FOO
+Fair amount of memory registers (g .. z)
+User defined variables like $foo
 Operators ()~ */% +- &| =   ATTENTION: unary minus is ~ (tilde)
 Symbol _ means last result, like Perl/Python
 Missing identifier means _ (+5 means last result + 5) like Perl
 Math functions @s @c @a @l @e @r = sin cos atan log exp sqrt
-Optional unsigned arithmetic (commands n, s)
+Optional unsigned arithmetic (commands N, S)
 Floating-point mode never upon division, only upon user request, like Python
 Combination if expressions/commands on same line
 Comments starting with #
@@ -26,9 +26,9 @@ Manual page
 
 Compilation Instructions
 ------------------------
-It can be compiled and installed on Linux or Windows/cygwin.
+It can be compiled and installed on Linux or Windows/Cygwin.
 Packages needed: gcc, make, flex, bison, mingw32
-On Windows, it runs both in cygwin and Windows command line windows.
+On Windows, it runs both in Cygwin and Windows command line windows.
 $ make
 $ sudo make install # installs to /usr/bin (and C:\WINDOWS on Cygwin)
 
@@ -44,7 +44,7 @@ Or simply copy win/szg.exe to C:\WINDOWS if you don't have Cygwin.
 
 Examples
 --------
-d xFFFFd  # Convert hexadecimal to decimal
+d XffffD  # Convert hexadecimal to decimal
 65535
 d 4+3     # Addition
 7
@@ -56,6 +56,6 @@ d /5.0    # floating point division upon request
 4.8
 f @r      # square root, missing operand, means @r(4.8)
 2.19089
-f b       # prompt shows float mode, look how bits are stored in memory
+f B       # prompt shows float mode, look how bits are stored in memory
 01000000,00001100,00110111,10001100
-f $FOO=   # store in variable $FOO
+f $foo=   # store in variable $foo

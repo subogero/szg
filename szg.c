@@ -35,32 +35,32 @@ static void vars(void);
 static void undo(void);
 
 const t_callback commands[26] = {
-  __na ,  // a
-  bin  ,  // b
-  __na ,  // c
-  dec  ,  // d
-  __na ,  // e
-  fltn ,  // f
-  __na ,  // g
-  usage,  // h
-  __na ,  // i
-  __na ,  // j
-  __na ,  // k
-  __na ,  // l
-  __na ,  // m
-  natn ,  // n
-  oct  ,  // o
-  prmt ,  // p
-  quit ,  // q
-  __na ,  // r
-  sign ,  // s
-  __na ,  // t
-  undo ,  // u
-  vars ,  // v
-  __na ,  // w
-  hex  ,  // x
-  __na ,  // y
-  __na ,  // z
+  __na ,  // A
+  bin  ,  // B
+  __na ,  // C
+  dec  ,  // D
+  __na ,  // E
+  fltn ,  // F
+  __na ,  // G
+  usage,  // H
+  __na ,  // I
+  __na ,  // J
+  __na ,  // K
+  __na ,  // L
+  __na ,  // M
+  natn ,  // N
+  oct  ,  // O
+  prmt ,  // P
+  quit ,  // Q
+  __na ,  // R
+  sign ,  // S
+  __na ,  // T
+  undo ,  // U
+  vars ,  // V
+  __na ,  // W
+  hex  ,  // X
+  __na ,  // Y
+  __na ,  // Z
 };
 
 // Local declarations and definitions

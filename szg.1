@@ -31,7 +31,7 @@ Commands:
 -p toggle prompt
 .PP
 -e treat the rest of the command line as expression
-.br
+.PP
 FILE input file, stdin used if not specified.
 .PP
 Any combination of commands is allowed, last command wins in case of conflict.
@@ -74,6 +74,8 @@ are:
 \- ability to go on from previous result with incomplete expression
 .br
 \- a fair amount of memory registers with intuitive use
+.br
+\- unlimited amount of user variables
 .PP
 .BR szg (1)
 takes expressions, assignments and commands on stdin and writes the results
@@ -81,10 +83,12 @@ to stdout or the specified output FILE upon pressing
 .BR Enter .
 .SS EXPRESSIONS
 .BR szg (1)
-expressions are built of numbers
-.B [0-9A-F.]+
+expressions are built of numbers (arbitrary coma-grouping allowed)
+.B [0-9a-f.,]+
 variables
-.B [G-Z]
+.B [g-z]
+user variables
+.B $[a-z0-9_]+
 last result
 .B _
 and operators listed below in descending precedence:
@@ -132,12 +136,12 @@ Floting point mode is activated according to the following rules:
 .br
 \- implicitly, if an entered expression contains a float-format number
 .br
-\- explicitly, with command f
+\- explicitly, with command F
 .PP
 Floating point numbers are displayed in scientific format only if necessary.
 Switching to floating-point implies switching to decimal I/O mode.
 Once in float mode, the commands
-.B b o x
+.B B O X
 (binary, octal, hexadecimal) set binary output-mode only, input mode remains decimal.
 .PP
 Switching back from floating-point mode to either signed or unsigned integer mode
@@ -149,51 +153,80 @@ and
 .SS ASSIGNMENTS
 .BR szg (1)
 assignments are in the form of
-.BR [G-Z]=expr .
+.BR [g-z]=expr .
 The expr may be incomplete, including the ulimate incomplete expression, the
 empty string, thus
-.B X=
-assigns the last result to X.
+.B x=
+assigns the last result to x.
+.PP
+User-variables can be created on the fly, by assigning an expression to them.
+Their form is a dollar-sign plus any number of lowercase letters, digits and underscores.
+.B $life_universe_everything=6*7
+stores 42 into variable $life_universe_everything, while
+.B $bar=
+stores the last result in $bar.
+.PP
+Diagnostic command V or \\v shows the hash function for variable-lookup
+and the usage of the 16 hash-buckets. May be deprecated at any time.
 .SS COMMANDS
-Commands are single lowercase letters.
+Commands are single uppercase letters, or a backslash plus lowercase letter.
 .PP
-b binary I/O mode
+B \\b binary I/O mode
 .br
-o octal I/O mode
+O \\o octal I/O mode
 .br
-d decimal I/O mode
+D \\d decimal I/O mode
 .br
-x hexadecimal I/O mode
+X \\x hexadecimal I/O mode
 .PP
-n unsigned (natural number) calculation mode
+N \\n unsigned (natural number) calculation mode
 .br
-s signed calculation mode
+S \\s signed calculation mode
 .br
-f floating-point calculation mode
+F \\f floating-point calculation mode
 .PP
-p toggle prompt
+P \\p toggle prompt
 .br
-u undo, unlimited depth, no redo
+U \\u undo, unlimited depth, no redo
 .br
-q or ^D (EOF Unix) or ^C (interrupt) to quit
+Q \\q or ^D (EOF Unix) or ^C (interrupt) to quit
 .PP
 Signed / unsigned calculation modes affect only */% operations and decimal
 IO, nothing else.
 .PP
 By default, a prompt is indicating IO and calculation mode,
 if input is coming from a terminal (no pipe, no input file).
+.br
+Uppercase prompts B O D X indicate unsinged mode.
+.br
+Lowercase prompts b o d x f indicate signed/float mode.
 .PP
 Undo does remember changes in calculation or I/O mode.
 .SS COMPOUNDS
 .BR szg (1)
 accepts combinations of expressions or statements with a leading or trailing command or both.
 For example
-.B x FFFE+1 d
-switches to hex mode temporarily to evaluate  FFFE+1 then displays the result 65535 in decimal.
+.B X fffe+1 D
+switches to hex mode temporarily to evaluate fffe+1 then displays the result 65535 in decimal.
 .SS COMMENTS
 Comments between
 .B #
 and end-of-line.
+.SS INPUT FROM COMMAND LINE
+When using the
+.B szg -e expr
+form, be careful with shell expansion taking place before passing expr to szg.
+Quote when necessary. Examples with Bourne compatible shells:
+.br
+.B szg -e 6 * 7
+will fail spectacularly, as your current dir listing will be substituted for *.
+.br
+.B szg -e 6*7
+may work, except if you have a file called 617 in you current dir,
+resulting in 617 instead of 42.
+.br
+.B szg -e \\\\x ffff \\\\d
+fails as the shell removes the backslashes. Use double backslashes or single quotes.
 .SH DIAGNOSTICS
 .BR szg (1)
 prints diagnostic messages to stderr, thus they appear on the terminal by
@@ -219,7 +252,9 @@ Attempt at math functions @l @r (log sqrt) for a negative number
 .SS n.a. for zero
 Attempt at math function @l (log) for zero
 .SS unable to parse number
-When entering 1.2.3 or 12 in binary mode or 12.34FF in float mode
+When entering 1.2.3 or 12 in binary mode or 12.34ff in float mode
+.SS variable $foo undefined
+Using undefined user-variable in expression
 .SH SEE ALSO
 .BR lex (1),
 .BR yacc (1),
