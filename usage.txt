@@ -15,7 +15,7 @@ Usage: szg [-bodxnsfp] [FILE] | [-h] | [-V]
 Command line calculator for 32-bit integers and floats.
 Accepts the following constructs from stdin or input FILE if specified
 or directly as command line arguments after as -e EXPR:
-- math expressions built of .0-9a-z g-z _ $x |&+-*/ @x ~ (), eg. 2*(2-5)
+- math expressions built of .0-9a-f, g-z _ $x |&+-*/ @x ~ (), eg. 2*(2-5)
   a-f are used for numbers in hexadecimal mode
   g-z are predefined variables
   _   is the result of the last operation
