@@ -139,11 +139,15 @@ release: commit
 	       -i version.txt || exit 1; \
 	git commit -a -m "version $$TAG"; \
 	echo Adding git tag $$TAG; \
-	echo Changes since $$OLD > Release.txt; \
-	echo >> Release.txt; \
-	git log --pretty=format:"%h %an %s" $$OLD.. >> Release.txt; \
-	$$EDITOR Release.txt; \
-	git tag -a -F Release.txt $$TAG HEAD; \
+	echo "szg ($$TAG)" > changelog; \
+	if [ -n "$$OLD" ]; then \
+	  git log --pretty=format:"  * %h %an %s" $$OLD.. >> changelog; \
+	else \
+	  echo '  * Initial release' >> changelog; \
+	fi; \
+	echo " -- `git config user.name` <`git config user.email`>  `date -R`" >> changelog; \
+	$$EDITOR changelog; \
+	git tag -a -F changelog $$TAG HEAD; \
 	$(MAKE) tarball TAG=-$$TAG
 
 publish:
