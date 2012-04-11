@@ -134,7 +134,7 @@ release: commit
 	select OLD in `git tag`; do break; done; \
 	export TAG; \
 	read -p 'Please Enter new tag name: ' TAG; \
-	sed -r -e "s/version\s..*$$/version $$TAG/" \
+	sed -r -e "s/^szg.*$$/szg $$TAG/" \
 	       -e 's/^(\(c\).+, [0-9]{4}).*$$/\1-'"`date +%Y`/" \
 	       -i version.txt || exit 1; \
 	git commit -a -m "version $$TAG"; \
