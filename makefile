@@ -83,11 +83,11 @@ vars:
 
 # c/h from y (yacc)
 %.c: %.y
-	bison -y -d -o $@ $<
+	yacc -d -o $@ $<
 
 # c from l (lex)
 %.c: %.l
-	flex -l -o $@ $<
+	lex -o $@ $<
 
 # Create headers with C string initializers from text files
 %.h: %.txt
