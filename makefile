@@ -47,24 +47,24 @@ WLIBS  := -L/usr/i586-mingw32msvc/lib -I/usr/i586-mingw32msvc/include
 endif
 
 # Sources
-CSRC   := szg.c grammar.c output.c tNum.c patterns.c arg1/arg1.c
-HSRC   := szg.h output.h tNum.h arg1/arg1.h
+CSRC   := szg.c grammar.c output.c tNum.c patterns.c arg1.c
+HSRC   := szg.h output.h tNum.h arg1.h version.h usage.h
 
 ifneq "$(VARS)" "no"
 CSRC   += vars.c
 HSRC   += vars.h
 endif
 
-TMPF   := patterns.c grammar.c grammar.h tNumTest arg1/usage.h arg1/version.h *~ *.tar.gz
+TMPF   := patterns.c grammar.c grammar.h tNumTest usage.h version.h *~ *.tar.gz
 
 MANPAGE:= szg.1
 MAN    := /usr/share/man/man1
 
 
 ####### Rules ########
-.PHONY: target arg1 tnum install uninstall clean commit tarball release
+.PHONY: target tnum install uninstall clean commit tarball release
 
-target: arg1 $(BIN)/$(TARGET) $(WIN)/$(WARGET)
+target: $(BIN)/$(TARGET) $(WIN)/$(WARGET)
 
 # Compile target
 $(BIN)/$(TARGET) $(WIN)/$(WARGET): $(CSRC) $(HSRC) makefile usage.txt version.txt
@@ -72,10 +72,6 @@ $(BIN)/$(TARGET) $(WIN)/$(WARGET): $(CSRC) $(HSRC) makefile usage.txt version.tx
 	$(CC) $(CFLAGS) -o $(BIN)/$(TARGET) $(CSRC)
 	@if [ ! -d $(WIN) ]; then mkdir $(WIN); fi
 	$(WC) $(WFLAGS) -o $(WIN)/$(WARGET) $(WLIBS) $(CSRC);
-
-# Recursive make for the arg1 subdir
-arg1:
-	$(MAKE) -C arg1
 
 # tNum test-suite
 tNum:
@@ -92,6 +88,10 @@ vars:
 # c from l (lex)
 %.c: %.l
 	flex -l -o $@ $<
+
+# Create headers with C string initializers from text files
+%.h: %.txt
+	@sed -e 's/[ \t]*$$//g' -e 's/^/"/g' -e 's/$$/\\n",/g' <$< >$@
 
 # Install to c/cygdrive/WINDOWS /usr/bin
 install:
@@ -123,7 +123,6 @@ commit: clean
 tarball:
 	mkdir .szg && mkdir .szg/szg$(TAG)
 	cp -rt .szg/szg$(TAG) *
-	rm -rf .szg/szg$(TAG)/arg1/.git*
 	$(MAKE) target
 	cp -rt .szg/szg$(TAG) bin win
 	cd .szg && tar -czf ../szg$(TAG).tar.gz szg$(TAG)

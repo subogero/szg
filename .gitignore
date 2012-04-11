@@ -9,3 +9,5 @@ tNum.exe
 vars
 vars.exe
 Release.txt
+usage.h
+version.h
