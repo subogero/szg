@@ -161,6 +161,7 @@ publish:
 	scp *.tar.gz $$ORIGIN
 
 deb:
+	@rm *.deb
 	mkdir -p debian/DEBIAN
 	@echo 'Package: szg'                                               > debian/DEBIAN/control
 	@sed -nr 's/^szg (.+)$$/Version: \1-1/p' version.txt              >> debian/DEBIAN/control
@@ -182,11 +183,13 @@ deb:
 	@grep Copyright version.txt                    > debian/usr/share/doc/szg/copyright
 	@echo 'License: GPL-3'                        >> debian/usr/share/doc/szg/copyright
 	@echo ' See /usr/share/common-licenses/GPL-3' >> debian/usr/share/doc/szg/copyright
-	@sed -rn 's/^szg (.+)/\1/p' version.txt | xargs git show | sed -n '/^szg/,/^ --/p' \
-	> debian/usr/share/doc/szg/changelog
-	@echo 'szg Debian maintainer and upstream author are identical.' \
+	@git tag \
+	| sort -rh \
+	| xargs git show \
+	| sed -n '/^szg/,/^ --/p' \
+	| sed -r 's/^szg \((.+)\)$$/szg (\1-1)/' \
 	> debian/usr/share/doc/szg/changelog.Debian
-	gzip --best debian/usr/share/doc/szg/changelog debian/usr/share/doc/szg/changelog.Debian
-	dpkg-deb --build debian debian
-	@mv -t . debian/*.deb && rm -rf debian
+	gzip --best debian/usr/share/doc/szg/changelog.Debian
+	dpkg-deb --build debian .
+	@rm -rf debian
 	lintian *.deb
