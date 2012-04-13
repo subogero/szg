@@ -135,7 +135,7 @@ release: commit
 	export TAG; \
 	read -p 'Please Enter new tag name: ' TAG; \
 	sed -r -e "s/^szg.*$$/szg $$TAG/" \
-	       -e 's/^(\(c\).+, [0-9]{4}).*$$/\1-'"`date +%Y`/" \
+	       -e 's/([0-9]{4}-)[0-9]*/\1'`date +%Y`/ \
 	       -i version.txt || exit 1; \
 	git commit -a -m "version $$TAG"; \
 	echo Adding git tag $$TAG; \
@@ -159,3 +159,34 @@ publish:
 	$(MAKE) tarball; \
 	echo scp to origin: $$ORIGIN; \
 	scp *.tar.gz $$ORIGIN
+
+deb:
+	mkdir -p debian/DEBIAN
+	@echo 'Package: szg'                                               > debian/DEBIAN/control
+	@sed -nr 's/^szg (.+)$$/Version: \1-1/p' version.txt              >> debian/DEBIAN/control
+	@echo 'Section: math'                                             >> debian/DEBIAN/control
+	@echo 'Priority: optional'                                        >> debian/DEBIAN/control
+	@echo 'Architecture: i386'                                        >> debian/DEBIAN/control
+	@echo 'Depends: libc6'                                            >> debian/DEBIAN/control
+	@echo 'Maintainer: SZABO Gergely <szg@subogero.com>'              >> debian/DEBIAN/control
+	@echo 'Description: Fast command line calculator'                 >> debian/DEBIAN/control
+	@echo ' Command line calculator with a very fast workflow,'       >> debian/DEBIAN/control
+	@echo ' unsigned/signed int float modes, dec hex oct bin formats' >> debian/DEBIAN/control
+	@echo ' user defined variables, comments and unlimited undo.'     >> debian/DEBIAN/control
+	mkdir -p debian/usr/bin
+	@cp bin/szg debian/usr/bin
+	mkdir -p debian/usr/share/man/man1
+	@cp szg.1 debian/usr/share/man/man1
+	@gzip --best debian/usr/share/man/man1/szg.1
+	mkdir -p debian/usr/share/doc/szg
+	@grep Copyright version.txt                    > debian/usr/share/doc/szg/copyright
+	@echo 'License: GPL-3'                        >> debian/usr/share/doc/szg/copyright
+	@echo ' See /usr/share/common-licenses/GPL-3' >> debian/usr/share/doc/szg/copyright
+	@sed -rn 's/^szg (.+)/\1/p' version.txt | xargs git show | sed -n '/^szg/,/^ --/p' \
+	> debian/usr/share/doc/szg/changelog
+	@echo 'szg Debian maintainer and upstream author are identical.' \
+	> debian/usr/share/doc/szg/changelog.Debian
+	gzip --best debian/usr/share/doc/szg/changelog debian/usr/share/doc/szg/changelog.Debian
+	dpkg-deb --build debian debian
+	@mv -t . debian/*.deb && rm -rf debian
+	lintian *.deb
