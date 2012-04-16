@@ -169,12 +169,13 @@ deb:
 	@echo 'Priority: optional'                                        >> debian/DEBIAN/control
 	@echo 'Architecture: i386'                                        >> debian/DEBIAN/control
 	@echo 'Depends: libc6'                                            >> debian/DEBIAN/control
-	@echo 'Maintainer: SZABO Gergely <szg@subogero.com>'              >> debian/DEBIAN/control
+	@sed -nr 's/^C.+ [-0-9]+ (.+)$$/Maintainer: \1/p' version.txt     >> debian/DEBIAN/control
 	@echo 'Description: Fast command line calculator'                 >> debian/DEBIAN/control
 	@echo ' Command line calculator with a very fast workflow,'       >> debian/DEBIAN/control
 	@echo ' unsigned/signed int float modes, dec hex oct bin formats' >> debian/DEBIAN/control
 	@echo ' user defined variables, comments and unlimited undo.'     >> debian/DEBIAN/control
 	mkdir -p debian/usr/bin
+	@strip bin/szg
 	@cp bin/szg debian/usr/bin
 	mkdir -p debian/usr/share/man/man1
 	@cp szg.1 debian/usr/share/man/man1
@@ -187,9 +188,9 @@ deb:
 	| sort -rh \
 	| xargs git show \
 	| sed -n '/^szg/,/^ --/p' \
-	| sed -r 's/^szg \((.+)\)$$/szg (\1-1)/' \
+	| sed -r 's/^szg \((.+)\)$$/szg (\1-1) UNRELEASED; urgency=low/' \
 	> debian/usr/share/doc/szg/changelog.Debian
 	gzip --best debian/usr/share/doc/szg/changelog.Debian
-	dpkg-deb --build debian .
+	dpkg-deb --build debian bin
 	@rm -rf debian
-	lintian *.deb
+	lintian bin/*.deb
