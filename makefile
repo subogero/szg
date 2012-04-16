@@ -161,7 +161,7 @@ publish:
 	scp *.tar.gz $$ORIGIN
 
 deb:
-	@rm *.deb
+	@-rm *.deb
 	mkdir -p debian/DEBIAN
 	@echo 'Package: szg'                                               > debian/DEBIAN/control
 	@sed -nr 's/^szg (.+)$$/Version: \1-1/p' version.txt              >> debian/DEBIAN/control
