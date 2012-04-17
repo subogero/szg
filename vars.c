@@ -44,6 +44,7 @@ void vars_set(char *key, struct tNum *num)
   }
   else {
     fprintf(stderr, "unable to allocate vaiable %s\n", key);
+    fflush(stderr);
   }  
 }
 
@@ -57,6 +58,7 @@ int  vars_get(char *key, struct tNum *num)
   }
   else {
     fprintf(stderr, "variable %s undefined\n", key);
+    fflush(stderr);
     return 1;
   }
 }
@@ -148,5 +150,6 @@ void vars_dbg(void)
     }
   }
   fprintf(stderr, "\n");
+  fflush(stderr);
 }
 

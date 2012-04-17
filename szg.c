@@ -158,6 +158,7 @@ void print_on(void) {
 int yyerror(const char *s) {
   fprintf(stderr, s);
   fprintf(stderr, "\n");
+  fflush(stderr);
   return 0;
 }
 
