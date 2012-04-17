@@ -35,7 +35,6 @@ endif
 # Unix targets compiled on both Windows/Unix
 CC     := gcc
 CFLAGS := -lm -Wno-format -Wmissing-prototypes $(CDEFS)
-WFLAGS := -lm -Wno-format -Wmissing-prototypes $(CDEFS)
 
 # Windows targets compiled on Windows/Unix
 ifdef SYSTEMROOT
@@ -60,18 +59,19 @@ TMPF   := patterns.c grammar.c grammar.h tNumTest usage.h version.h *~ *.tar.gz
 MANPAGE:= szg.1
 MAN    := /usr/share/man/man1
 
-
 ####### Rules ########
-.PHONY: target tnum install uninstall clean commit tarball release
+.PHONY: all tnum install uninstall clean commit tarball release
 
-target: $(BIN)/$(TARGET) $(WIN)/$(WARGET)
+all: $(BIN)/$(TARGET)
+win: $(WIN)/$(WARGET)
 
-# Compile target
-$(BIN)/$(TARGET) $(WIN)/$(WARGET): $(CSRC) $(HSRC) makefile usage.txt version.txt
+# Compile targets
+$(BIN)/$(TARGET): $(CSRC) $(HSRC) makefile usage.txt version.txt
 	@if [ ! -d $(BIN) ]; then mkdir $(BIN); fi
 	$(CC) $(CFLAGS) -o $(BIN)/$(TARGET) $(CSRC)
+$(WIN)/$(WARGET): $(CSRC) $(HSRC) makefile usage.txt version.txt
 	@if [ ! -d $(WIN) ]; then mkdir $(WIN); fi
-	$(WC) $(WFLAGS) -o $(WIN)/$(WARGET) $(WLIBS) $(CSRC);
+	$(WC) $(CFLAGS) -o $(WIN)/$(WARGET) $(WLIBS) $(CSRC);
 
 # tNum test-suite
 tNum:
@@ -123,7 +123,7 @@ commit: clean
 tarball:
 	mkdir .szg && mkdir .szg/szg$(TAG)
 	cp -rt .szg/szg$(TAG) *
-	$(MAKE) target
+	$(MAKE) all
 	cp -rt .szg/szg$(TAG) bin win
 	cd .szg && tar -czf ../szg$(TAG).tar.gz szg$(TAG)
 	rm -rf .szg
