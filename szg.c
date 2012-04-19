@@ -142,6 +142,7 @@ int main(int argc, char* argv[]) {
 ////////////////////////////////////////////////////////////////////////////////
 void print(void) {
   tNumDisplay(&output, print_req, prompt);
+  fflush(NULL);
   print_req = 0;
 }
 

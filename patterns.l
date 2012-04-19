@@ -3,7 +3,7 @@
 * Free software, distributed under the GNU GPL v3 license
 * There is absolutely no warranty.
 *****************************************************************************/
-
+%option always-interactive
 %{
 #include <stdlib.h>
 #include "output.h"

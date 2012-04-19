@@ -34,8 +34,9 @@ endif
 
 # Unix targets compiled on both Windows/Unix
 CC     := gcc
-CFLAGS := -lm -Wno-format -Wmissing-prototypes $(CDEFS)
-WFLAGS := -lm -Wno-format -Wmissing-prototypes $(CDEFS)
+CFLAGS := -Wno-format -Wmissing-prototypes $(CDEFS)
+WFLAGS := -Wno-format -Wmissing-prototypes $(CDEFS)
+LIBS   := -lm
 
 # Windows targets compiled on Windows/Unix
 ifdef SYSTEMROOT
@@ -69,9 +70,9 @@ target: arg1 $(BIN)/$(TARGET) $(WIN)/$(WARGET)
 # Compile target
 $(BIN)/$(TARGET) $(WIN)/$(WARGET): $(CSRC) $(HSRC) makefile usage.txt version.txt
 	@if [ ! -d $(BIN) ]; then mkdir $(BIN); fi
-	$(CC) $(CFLAGS) -o $(BIN)/$(TARGET) $(CSRC)
+	$(CC) $(CFLAGS) -o $(BIN)/$(TARGET) $(CSRC) $(LIBS)
 	@if [ ! -d $(WIN) ]; then mkdir $(WIN); fi
-	$(WC) $(WFLAGS) -o $(WIN)/$(WARGET) $(WLIBS) $(CSRC);
+	$(WC) $(WFLAGS) -o $(WIN)/$(WARGET) $(WLIBS) $(CSRC) $(LIBS);
 
 # Recursive make for the arg1 subdir
 arg1:
