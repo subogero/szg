@@ -47,11 +47,13 @@ struct tNum tNumOpIn(struct tNum src1, char op, struct tNum src2) {
   // Division by zero check
   if ((op == '/' || op == '%') && !src2.val.n) {
     fprintf(stderr, "division by zero\n");
+    fflush(stderr);
     return src1;
   }
   // Float mod check
   if (op == '%' && (src1.type == T_FLOAT || src2.type == T_FLOAT)) {
     fprintf(stderr, "float modulo\n");
+    fflush(stderr);
     return src1;
   }
   // Automatic type match: *| never, +- if any operand float, */% always
@@ -105,10 +107,12 @@ struct tNum tNumOpPre(char op, struct tNum src) {
       tNum2type(&src, T_FLOAT);
       if (src.val.f < 0.0 && (op == 'l' || op == 'r')) {
         fprintf(stderr, "n.a. for negative\n");
+        fflush(stderr);
         return src;
       }
       if (src.val.f == 0.0 && op == 'l') {
         fprintf(stderr, "n.a. for zero\n");
+        fflush(stderr);
         return src;
       }
       src.val.f = op == 's' ? sin (src.val.f)
@@ -117,7 +121,9 @@ struct tNum tNumOpPre(char op, struct tNum src) {
                 : op == 'l' ? log (src.val.f)
                 : op == 'e' ? exp (src.val.f)
                 : op == 'r' ? sqrt(src.val.f)
-                : (fprintf(stderr, "unknown function\n"), src.val.f);
+                : (fprintf(stderr, "unknown function\n"), 
+                   fflush(stderr),
+                   src.val.f);
       break;
   }
   return src;
@@ -151,7 +157,10 @@ int tNumParse(struct tNum *this, char *yytext) {
     tNum2type(this, T_FLOAT);
     success = tNumParse(this, yytext);
   }
-  if (!success) fprintf(stderr, "unable to parse number\n");
+  if (!success) {
+    fprintf(stderr, "unable to parse number\n");
+    fflush(stderr);
+  }
   return success;
 }
 
@@ -196,6 +205,7 @@ void tNumPrint(struct tNum* this, int num, int prompt, char base) {
     case T_FLOAT  : printf(formats[index], this->val.f); break;
   }
   if (prompt) printf(prompts[index]);
+  fflush(stdout);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

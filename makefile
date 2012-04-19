@@ -91,7 +91,7 @@ vars:
 
 # c from l (lex)
 %.c: %.l
-	flex -l -o $@ $<
+	flex -I -o $@ $<
 
 # Install to c/cygdrive/WINDOWS /usr/bin
 install:
