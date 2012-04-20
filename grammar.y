@@ -32,7 +32,7 @@ static void dbg(char* term);
 
 %start list
 
-%token <u8>  LETTER COMMAND OPADD OPMUL OPPRE
+%token <u8>  LETTER COMMAND OPADD OPMUL OPPOW OPPRE
 %token <id>  VAR
 %token <Num> NUMBER
 
@@ -40,6 +40,7 @@ static void dbg(char* term);
 
 %left OPADD        // additive operators       +-|
 %left OPMUL        // multiplicative operators */%&
+%left OPPOW        // power operator           ^
 %nonassoc OPPRE    // prefix operators         ~
 
 %%
@@ -62,6 +63,7 @@ expr :                       { dbg("non");  outputGet(); $$ = output; }
      | '(' expr ')'          { dbg("par");  $$ = $2; }
      | expr OPADD expr       { dbg("oad");  $$ = tNumOpIn ($1, $2, $3); }
      | expr OPMUL expr       { dbg("omu");  $$ = tNumOpIn ($1, $2, $3); }
+     | expr OPPOW expr       { dbg("opo");  $$ = tNumOpIn ($1, $2, $3); }
      | OPPRE expr            { dbg("opr");  $$ = tNumOpPre($1, $2); }
      | LETTER                { dbg("var");  $$ = regs[$1]; }
      | VAR                   { dbg("var");  if (vars_get($1,&$$)) $$=output; }

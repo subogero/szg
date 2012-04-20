@@ -11,6 +11,7 @@
 
 static void CommaStrip(char *yytext);
 static void CommaGroup(char *binary, unsigned int val);
+static struct tNum tNumPower(struct tNum src1, struct tNum src2);
 
 // Value in actual type (can be lvalue)
 #define VALUE(this) ( (this)->type == T_NATURAL ? (this)->val.n \
@@ -54,8 +55,8 @@ struct tNum tNumOpIn(struct tNum src1, char op, struct tNum src2) {
     fprintf(stderr, "float modulo\n");
     return src1;
   }
-  // Automatic type match: *| never, +- if any operand float, */% always
-  if (op != '&' && op != '|' &&
+  // Automatic type match: *|^ never, +- if any operand float, */%i always
+  if (op != '&' && op != '|' && op != '^' &&
       (src1.type == T_FLOAT ||
        src2.type == T_FLOAT ||
        op != '+' && op != '-')) {
@@ -87,6 +88,8 @@ struct tNum tNumOpIn(struct tNum src1, char op, struct tNum src2) {
       if (src1.type == T_SIGNED) src1.val.s %= src2.val.s;
       else                       src1.val.n %= src2.val.n;
       return src1;
+    case '^':
+      return tNumPower(src1, src2);
     default:
       return src1;
   }
@@ -220,3 +223,29 @@ static void CommaGroup(char *binary, unsigned int val)
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Power operator
+////////////////////////////////////////////////////////////////////////////////
+static struct tNum tNumPower(struct tNum src1, struct tNum src2) {
+  /* Convert to float if any operand float, or power negative */
+  if (src1.type == T_FLOAT || src2.type == T_FLOAT ||
+      src2.type == T_SIGNED && src2.val.s < 0) {
+    tNumMatchType(&src1, &src2);
+    src1.val.f = pow(src1.val.f, src2.val.f);
+    return src1;
+  }
+  /* Integer power */
+  if (src2.val.n == 0) {
+    src1.val.s = 1;
+    return src1;
+  }
+  struct tNum tmp = src1;
+  unsigned int i;
+  for (i = 1; i < src2.val.n; ++i) {
+    if (tmp.type == T_SIGNED)
+      src1.val.s *= tmp.val.s;
+    else
+      src1.val.n *= tmp.val.n;
+  }
+  return src1;
+}

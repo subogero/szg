@@ -25,6 +25,7 @@ static void dbug(char* token);
 [g-z]       { print_on(); yylval.u8 = *yytext - 'g';                       dbug("LETTER");  return LETTER; }
 [-+|]       { print_on(); yylval.u8 = *yytext;                             dbug("OPADD");   return OPADD; }
 [*/%&]      { print_on(); yylval.u8 = *yytext;                             dbug("OPMUL");   return OPMUL; }
+\^          { print_on(); yylval.u8 = *yytext;                             dbug("OPPOW");   return OPPOW; }
 ~           { print_on(); yylval.u8 = *yytext;                             dbug("OPPRE");   return OPPRE; }
 @[a-z]      { print_on(); yylval.u8 = yytext[1];                           dbug("OPPRE");   return OPPRE; }
 \$[a-z]+    { print_on(); yylval.id = vars_alloc(yytext);                  dbug("VAR");     return VAR; }
