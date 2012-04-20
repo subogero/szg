@@ -97,6 +97,9 @@ and operators listed below in descending precedence:
 .B ~ @x
 \ prefix operators        : unary minus, math functions
 .br
+.B ^
+\    power operators         : power
+.br
 .B */%&
 \ multiplicative operators: multiply, divide, modulo, bitwise AND
 .br
@@ -133,6 +136,8 @@ Floting point mode is activated according to the following rules:
 \- never upon division
 .br
 \- implicitly, if an entered expression contains a float-format number
+.br
+\- implicitly, if power's (^) 2nd operand is negative
 .br
 \- explicitly, with command F
 .PP
