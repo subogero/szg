@@ -8,8 +8,9 @@
 SHELL := /bin/bash
 
 # Target and sources
-BIN    := bin
-WIN    := win
+BIN    := .bin
+WIN    := .win
+REL    := .release
 
 # Windows/Unix targets compiled on Windows/Unix
 WARGET := szg.exe
@@ -120,13 +121,15 @@ commit: clean
 	fi
 
 # Create tarball for distribution
-tarball:
-	mkdir .szg && mkdir .szg/szg$(TAG)
-	cp -rt .szg/szg$(TAG) *
-	$(MAKE) all
-	cp -rt .szg/szg$(TAG) bin win
-	cd .szg && tar -czf ../szg$(TAG).tar.gz szg$(TAG)
-	rm -rf .szg
+tarball: clean
+	[ -n "$(TAG)" ]
+	mkdir -p $(REL)/szg-$(TAG)
+	cp -rt $(REL)/szg-$(TAG) *
+	cd $(REL);                         tar -czf szg_$(TAG).tar.gz szg-$(TAG)
+	cd $(REL); [ -f *zip ] && rm *zip; zip -r   szg_$(TAG).zip    szg-$(TAG)
+	$(MAKE) --no-print-directory win
+	zip -j $(REL)/szg_$(TAG).zip $(WIN)/$(WARGET)
+	rm -rf $(REL)/szg-$(TAG)
 
 # Tag HEAD and Create compressed tarball
 release: commit
@@ -148,7 +151,7 @@ release: commit
 	echo " -- `git config user.name` <`git config user.email`>  `date -R`" >> changelog; \
 	$$EDITOR changelog; \
 	git tag -a -F changelog $$TAG HEAD; \
-	$(MAKE) tarball TAG=-$$TAG
+	$(MAKE) tarball TAG=$$TAG
 
 publish:
 	@REMOTES=`git remote -v | sed -rn 's/^(.+)\t[^ ]+ \(push\)$$/\1/p'`; \
