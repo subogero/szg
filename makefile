@@ -105,8 +105,8 @@ install:
 uninstall:
 	@rm -f /usr/bin/$(TARGET);
 	@rm -f $(MAN)/$(MANPAGE);
-	@if [ -n "$(SYSTEMROOT)" ];                        \
-	  then rm -f /cygdrive/c/WINDOWS/$(TARGET);        \
+	@if [ -n "$(SYSTEMROOT)" ];                 \
+	  then rm -f /cygdrive/c/WINDOWS/$(TARGET); \
 	fi
 
 # Remove all generated files
@@ -175,8 +175,8 @@ deb:
 	@echo ' unsigned/signed int float modes, dec hex oct bin formats' >> debian/DEBIAN/control
 	@echo ' user defined variables, comments and unlimited undo.'     >> debian/DEBIAN/control
 	mkdir -p debian/usr/bin
-	@strip bin/szg
-	@cp bin/szg debian/usr/bin
+	@strip $(BIN)/szg
+	@cp $(BIN)/szg debian/usr/bin
 	mkdir -p debian/usr/share/man/man1
 	@cp szg.1 debian/usr/share/man/man1
 	@gzip --best debian/usr/share/man/man1/szg.1
@@ -191,6 +191,6 @@ deb:
 	| sed -r 's/^szg \((.+)\)$$/szg (\1-1) UNRELEASED; urgency=low/' \
 	> debian/usr/share/doc/szg/changelog.Debian
 	gzip --best debian/usr/share/doc/szg/changelog.Debian
-	dpkg-deb --build debian bin
+	dpkg-deb --build debian $(BIN)
 	@rm -rf debian
-	lintian bin/*.deb
+	lintian $(BIN)/*.deb
