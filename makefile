@@ -127,7 +127,7 @@ tarball: clean
 	cp -rt $(REL)/szg-$(TAG) *
 	cd $(REL);                         tar -czf szg_$(TAG).tar.gz szg-$(TAG)
 	cd $(REL); [ -f *zip ] && rm *zip; zip -r   szg_$(TAG).zip    szg-$(TAG)
-	$(MAKE) --no-print-directory win
+	$(MAKE) --no-print-directory $(WIN)/$(WARGET)
 	zip -j $(REL)/szg_$(TAG).zip $(WIN)/$(WARGET)
 	rm -rf $(REL)/szg-$(TAG)
 
