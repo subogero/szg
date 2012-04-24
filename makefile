@@ -3,6 +3,13 @@
 # Free software, distributed under the GNU GPL v3 license
 # There is absolutely no warranty.
 ##############################################################################
+define DESCR
+Description: Fast command line calculator
+ Command line calculator with a very fast workflow,
+ unsigned/signed int float modes, dec hex oct bin formats
+ user defined variables, comments and unlimited undo.
+endef
+export DESCR
 
 ####### Macros #######
 SHELL := /bin/bash
@@ -11,6 +18,7 @@ SHELL := /bin/bash
 BIN    := .bin
 WIN    := .win
 REL    := .release
+DEB    := .debian
 
 # Windows/Unix targets compiled on Windows/Unix
 WARGET := szg.exe
@@ -163,37 +171,34 @@ publish:
 	echo scp to origin: $$ORIGIN; \
 	scp *.tar.gz $$ORIGIN
 
-deb:
+deb: $(BIN)/$(TARGET)
 	@-rm *.deb
-	mkdir -p debian/DEBIAN
-	@echo 'Package: szg'                                               > debian/DEBIAN/control
-	@sed -nr 's/^szg (.+)$$/Version: \1-1/p' version.txt              >> debian/DEBIAN/control
-	@echo 'Section: math'                                             >> debian/DEBIAN/control
-	@echo 'Priority: optional'                                        >> debian/DEBIAN/control
-	@echo 'Architecture: i386'                                        >> debian/DEBIAN/control
-	@echo 'Depends: libc6'                                            >> debian/DEBIAN/control
-	@sed -nr 's/^C.+ [-0-9]+ (.+)$$/Maintainer: \1/p' version.txt     >> debian/DEBIAN/control
-	@echo 'Description: Fast command line calculator'                 >> debian/DEBIAN/control
-	@echo ' Command line calculator with a very fast workflow,'       >> debian/DEBIAN/control
-	@echo ' unsigned/signed int float modes, dec hex oct bin formats' >> debian/DEBIAN/control
-	@echo ' user defined variables, comments and unlimited undo.'     >> debian/DEBIAN/control
-	mkdir -p debian/usr/bin
-	@strip $(BIN)/szg
-	@cp $(BIN)/szg debian/usr/bin
-	mkdir -p debian/usr/share/man/man1
-	@cp szg.1 debian/usr/share/man/man1
-	@gzip --best debian/usr/share/man/man1/szg.1
-	mkdir -p debian/usr/share/doc/szg
-	@grep Copyright version.txt                    > debian/usr/share/doc/szg/copyright
-	@echo 'License: GPL-3'                        >> debian/usr/share/doc/szg/copyright
-	@echo ' See /usr/share/common-licenses/GPL-3' >> debian/usr/share/doc/szg/copyright
+	mkdir -p $(DEB)/DEBIAN
+	@echo 'Package: szg'                                               > $(DEB)/DEBIAN/control
+	@sed -nr 's/^szg (.+)$$/Version: \1-1/p' version.txt              >> $(DEB)/DEBIAN/control
+	@echo 'Section: math'                                             >> $(DEB)/DEBIAN/control
+	@echo 'Priority: optional'                                        >> $(DEB)/DEBIAN/control
+	@echo 'Architecture: i386'                                        >> $(DEB)/DEBIAN/control
+	@echo 'Depends: libc6'                                            >> $(DEB)/DEBIAN/control
+	@sed -nr 's/^C.+ [-0-9]+ (.+)$$/Maintainer: \1/p' version.txt     >> $(DEB)/DEBIAN/control
+	@echo "$$DESCR"                                                   >> $(DEB)/DEBIAN/control
+	mkdir -p $(DEB)/usr/bin
+	@cp $(BIN)/$(TARGET) $(DEB)/usr/bin
+	@strip $(DEB)/usr/bin/$(TARGET)
+	mkdir -p $(DEB)/usr/share/man/man1
+	@cp szg.1 $(DEB)/usr/share/man/man1
+	@gzip --best $(DEB)/usr/share/man/man1/szg.1
+	mkdir -p $(DEB)/usr/share/doc/szg
+	@grep Copyright version.txt                    > $(DEB)/usr/share/doc/szg/copyright
+	@echo 'License: GPL-3'                        >> $(DEB)/usr/share/doc/szg/copyright
+	@echo ' See /usr/share/common-licenses/GPL-3' >> $(DEB)/usr/share/doc/szg/copyright
 	@git tag \
 	| sort -rh \
 	| xargs git show \
 	| sed -n '/^szg/,/^ --/p' \
 	| sed -r 's/^szg \((.+)\)$$/szg (\1-1) UNRELEASED; urgency=low/' \
-	> debian/usr/share/doc/szg/changelog.Debian
-	gzip --best debian/usr/share/doc/szg/changelog.Debian
-	dpkg-deb --build debian $(BIN)
-	@rm -rf debian
-	lintian $(BIN)/*.deb
+	> $(DEB)/usr/share/doc/szg/changelog.Debian
+	gzip --best $(DEB)/usr/share/doc/szg/changelog.Debian
+	dpkg-deb --build $(DEB) $(REL)
+	@rm -rf $(DEB)
+	lintian $(REL)/*.deb
