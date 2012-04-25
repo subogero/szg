@@ -18,7 +18,6 @@ SHELL := /bin/bash
 BIN    := .bin
 WIN    := .win
 REL    := .release
-DEB    := .debian
 
 # Windows/Unix targets compiled on Windows/Unix
 WARGET := szg.exe
@@ -66,10 +65,11 @@ endif
 TMPF   := patterns.c grammar.c grammar.h tNumTest usage.h version.h *~ *.tar.gz
 
 MANPAGE:= szg.1
-MAN    := /usr/share/man/man1
+MANDIR := $(DESTDIR)/usr/share/man/man1
+BINDIR := $(DESTDIR)/usr/bin
 
 ####### Rules ########
-.PHONY: all tnum install uninstall clean commit tarball release
+.PHONY: all tnum install uninstall clean commit tarball tag release deb
 
 all: $(BIN)/$(TARGET)
 win: $(WIN)/$(WARGET)
@@ -104,16 +104,19 @@ vars:
 
 # Install to c/cygdrive/WINDOWS /usr/bin
 install:
-	@cp -f $(BIN)/$(TARGET) /usr/bin;
-	@cp -f $(MANPAGE) $(MAN);
+	@mkdir -p $(BINDIR)
+	@cp -f $(BIN)/$(TARGET) $(BINDIR)
+	@mkdir -p $(MANDIR)
+	@cp -f $(MANPAGE) $(MANDIR)
+	@gzip --best $(MANDIR)/$(MANPAGE)
 	@if [ -n "$(SYSTEMROOT)" ];                        \
 	  then cp -f $(WIN)/$(TARGET) /cygdrive/c/WINDOWS; \
 	fi
 
 # Uninstall from c/cygdrive/WINDOWS /usr/bin
 uninstall:
-	@rm -f /usr/bin/$(TARGET);
-	@rm -f $(MAN)/$(MANPAGE);
+	@rm -f $(BINDIR)/$(TARGET)
+	@rm -f $(MANDIR)/$(MANPAGE).gz
 	@if [ -n "$(SYSTEMROOT)" ];                 \
 	  then rm -f /cygdrive/c/WINDOWS/$(TARGET); \
 	fi
@@ -123,24 +126,14 @@ clean:
 	@rm -fr $(BIN) $(WIN) $(TMPF)
 
 # Commit to git repository
-commit: clean
+commit:
 	@if [ "`git diff --no-ext-diff HEAD`" ]; \
 	  then git commit -a;     \
 	fi
 
-# Create tarball for distribution
-tarball: clean
-	[ -n "$(TAG)" ]
-	mkdir -p $(REL)/szg-$(TAG)
-	cp -rt $(REL)/szg-$(TAG) *
-	cd $(REL);                         tar -czf szg_$(TAG).tar.gz szg-$(TAG)
-	cd $(REL); [ -f *zip ] && rm *zip; zip -r   szg_$(TAG).zip    szg-$(TAG)
-	$(MAKE) --no-print-directory $(WIN)/$(WARGET)
-	zip -j $(REL)/szg_$(TAG).zip $(WIN)/$(WARGET)
-	rm -rf $(REL)/szg-$(TAG)
-
+# Create tarballs for distribution
 # Tag HEAD and Create compressed tarball
-release: commit
+tag: commit
 	@echo 'Chose old tag to follow: '; \
 	select OLD in `git tag`; do break; done; \
 	export TAG; \
@@ -159,46 +152,62 @@ release: commit
 	echo " -- `git config user.name` <`git config user.email`>  `date -R`" >> changelog; \
 	$$EDITOR changelog; \
 	git tag -a -F changelog $$TAG HEAD; \
-	$(MAKE) tarball TAG=$$TAG
 
 publish:
 	@REMOTES=`git remote -v | sed -rn 's/^(.+)\t[^ ]+ \(push\)$$/\1/p'`; \
 	ORIGIN=`git remote -v \
 	| sed -rn 's,^origin\t(ssh://)?(.+)szg\.git \(push\)$$,\2,p'\
 	| sed 's,/~,:,'`; \
-	for REMOTE in $$REMOTES; do git push --mirror $$REMOTE; done; \
-	$(MAKE) tarball; \
-	echo scp to origin: $$ORIGIN; \
-	scp *.tar.gz $$ORIGIN
+	for REMOTE in $$REMOTES; do git push --all --tags $$REMOTE; done
 
-deb: $(BIN)/$(TARGET)
-	@-rm *.deb
-	mkdir -p $(DEB)/DEBIAN
-	@echo 'Package: szg'                                               > $(DEB)/DEBIAN/control
-	@sed -nr 's/^szg (.+)$$/Version: \1-1/p' version.txt              >> $(DEB)/DEBIAN/control
-	@echo 'Section: math'                                             >> $(DEB)/DEBIAN/control
-	@echo 'Priority: optional'                                        >> $(DEB)/DEBIAN/control
-	@echo 'Architecture: i386'                                        >> $(DEB)/DEBIAN/control
-	@echo 'Depends: libc6'                                            >> $(DEB)/DEBIAN/control
-	@sed -nr 's/^C.+ [-0-9]+ (.+)$$/Maintainer: \1/p' version.txt     >> $(DEB)/DEBIAN/control
-	@echo "$$DESCR"                                                   >> $(DEB)/DEBIAN/control
-	mkdir -p $(DEB)/usr/bin
-	@cp $(BIN)/$(TARGET) $(DEB)/usr/bin
-	@strip $(DEB)/usr/bin/$(TARGET)
-	mkdir -p $(DEB)/usr/share/man/man1
-	@cp szg.1 $(DEB)/usr/share/man/man1
-	@gzip --best $(DEB)/usr/share/man/man1/szg.1
-	mkdir -p $(DEB)/usr/share/doc/szg
-	@grep Copyright version.txt                    > $(DEB)/usr/share/doc/szg/copyright
-	@echo 'License: GPL-3'                        >> $(DEB)/usr/share/doc/szg/copyright
-	@echo ' See /usr/share/common-licenses/GPL-3' >> $(DEB)/usr/share/doc/szg/copyright
-	@git tag \
+tarball: clean
+	export TAG=`sed -rn 's/^szg (.+)$$/\1/p' version.txt`; \
+	$(MAKE) balls
+balls:
+	mkdir -p $(REL)/szg-$(TAG); \
+	cp -rt $(REL)/szg-$(TAG) *; \
+	cd $(REL); \
+	tar -czf szg_$(TAG).tar.gz szg-$(TAG); \
+	[ -f *zip ] && rm *zip; \
+	zip -r   szg_$(TAG).zip    szg-$(TAG); \
+	cd ..; \
+	$(MAKE) $(WIN)/$(WARGET); \
+	zip -j $(REL)/szg_$(TAG).zip $(WIN)/$(WARGET)
+
+deb: tarball $(BIN)/$(TARGET)
+	export TAG=`sed -rn 's/^szg (.+)$$/\1/p' version.txt`; \
+	export DEB=$(REL)/szg-$${TAG}/debian; \
+	$(MAKE) debs
+debs:
+	-rm $(REL)/*.deb
+	cp -f $(REL)/szg_$(TAG).tar.gz $(REL)/szg_$(TAG).orig.tar.gz 
+	mkdir -p $(DEB)
+	echo 'Source: szg'                                            > $(DEB)/control
+	echo 'Section: math'                                         >> $(DEB)/control
+	echo 'Priority: optional'                                    >> $(DEB)/control
+	sed -nr 's/^C.+ [-0-9]+ (.+)$$/Maintainer: \1/p' version.txt >> $(DEB)/control
+	echo 'Build-Depends: debhelper, flex, bison'                 >> $(DEB)/control
+	echo 'Standards-version: 3.8.4'                              >> $(DEB)/control
+	echo                                                         >> $(DEB)/control
+	echo 'Package: szg'                                          >> $(DEB)/control
+	echo 'Architecture: any'                                     >> $(DEB)/control
+	echo 'Depends: $${shlibs:Depends}, $${misc:Depends}'         >> $(DEB)/control
+	echo "$$DESCR"                                               >> $(DEB)/control
+	grep Copyright version.txt                    > $(DEB)/copyright
+	echo 'License: GPL-3'                        >> $(DEB)/copyright
+	echo ' See /usr/share/common-licenses/GPL-3' >> $(DEB)/copyright
+	echo 7 > $(DEB)/compat
+	git tag \
 	| sort -rh \
 	| xargs git show \
 	| sed -n '/^szg/,/^ --/p' \
 	| sed -r 's/^szg \((.+)\)$$/szg (\1-1) UNRELEASED; urgency=low/' \
-	> $(DEB)/usr/share/doc/szg/changelog.Debian
-	gzip --best $(DEB)/usr/share/doc/szg/changelog.Debian
-	dpkg-deb --build $(DEB) $(REL)
-	@rm -rf $(DEB)
+	> $(DEB)/changelog
+	echo '#!/usr/bin/make -f' > $(DEB)/rules
+	echo '%:'                >> $(DEB)/rules
+	echo '	dh $$@'          >> $(DEB)/rules
+	chmod 755 $(DEB)/rules
+	mkdir -p $(DEB)/source
+	echo '3.0 (quilt)' > $(DEB)/source/format
+	cd $(REL)/szg-$(TAG); dpkg-buildpackage	-us -uc
 	lintian $(REL)/*.deb
