@@ -1,5 +1,6 @@
-bin
-win
+/.bin
+/.win
+/.release
 szg*.tar.gz
 grammar.c
 grammar.h
@@ -9,3 +10,5 @@ tNum.exe
 vars
 vars.exe
 Release.txt
+usage.h
+version.h
