@@ -228,8 +228,10 @@ static void CommaGroup(char *binary, unsigned int val)
 ////////////////////////////////////////////////////////////////////////////////
 static struct tNum tNumPower(struct tNum src1, struct tNum src2) {
   /* Convert to float if any operand float, or power negative */
-  if (src1.type == T_FLOAT || src2.type == T_FLOAT ||
-      src2.type == T_SIGNED && src2.val.s < 0) {
+  if (src2.type == T_SIGNED && src2.val.s < 0) {
+    tNum2type(&src2, T_FLOAT);
+  }
+  if (src1.type == T_FLOAT || src2.type == T_FLOAT) {
     tNumMatchType(&src1, &src2);
     src1.val.f = pow(src1.val.f, src2.val.f);
     return src1;
