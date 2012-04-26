@@ -132,6 +132,7 @@ commit:
 	  then git commit -a;     \
 	fi
 
+# Create a tagged commit for release
 tag: commit
 	@echo 'Chose old tag to follow: '; \
 	select OLD in `git tag`; do break; done; \
@@ -154,6 +155,7 @@ tag: commit
 	git tag -a -F changelog $$TAG HEAD; \
 	rm changelog
 
+# Push to all git remotes
 push:
 	@REMOTES=`git remote -v | sed -rn 's/^(.+)\t[^ ]+ \(push\)$$/\1/p'`; \
 	for REMOTE in $$REMOTES; do \
@@ -161,6 +163,7 @@ push:
 	  git push --all  $$REMOTE; \
 	done
 
+# Source tarball and zip file with Win32 executable
 tarball: clean
 	export TAG=`sed -rn 's/^szg (.+)$$/\1/p' version.txt`; \
 	$(MAKE) balls
@@ -175,6 +178,7 @@ balls:
 	$(MAKE) $(WIN)/$(WARGET); \
 	zip -j $(REL)/szg_$(TAG).zip $(WIN)/$(WARGET)
 
+# Source and binary Debian packages
 deb: tarball $(BIN)/$(TARGET)
 	export TAG=`sed -rn 's/^szg (.+)$$/\1/p' version.txt`; \
 	export DEB=$(REL)/szg-$${TAG}/debian; \
@@ -211,4 +215,5 @@ debs:
 	cd $(REL)/szg-$(TAG); dpkg-buildpackage	-us -uc
 	lintian $(REL)/*.deb
 
+# Release
 release: tag deb push
