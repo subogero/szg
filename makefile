@@ -42,7 +42,7 @@ endif
 
 # Unix targets compiled on both Windows/Unix
 CC     := gcc
-CFLAGS := -lm -Wno-format -Wmissing-prototypes $(CDEFS)
+CFLAGS := -g -Wno-format -Wmissing-prototypes $(CDEFS)
 LIBS   := -lm
 
 # Windows targets compiled on Windows/Unix
@@ -63,7 +63,7 @@ CSRC   += vars.c
 HSRC   += vars.h
 endif
 
-TMPF   := patterns.c grammar.c grammar.h tNumTest usage.h version.h *~ *.tar.gz
+TMPF   := patterns.c patterns.h grammar.c grammar.h tNumTest usage.h version.h *~ *.tar.gz
 
 MANPAGE:= szg.1
 MANDIR := $(DESTDIR)/usr/share/man/man1
@@ -93,11 +93,11 @@ vars:
 
 # c/h from y (yacc)
 %.c: %.y
-	yacc -d -o $@ $<
+	bison -d -o $@ $<
 
 # c from l (lex)
 %.c: %.l
-	lex -o $@ $<
+	flex --header-file=patterns.h -o $@ $<
 
 # Create headers with C string initializers from text files
 %.h: %.txt

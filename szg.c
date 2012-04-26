@@ -13,6 +13,7 @@
 #include "szg.h"
 #include "output.h"
 #include "grammar.h"
+#include "patterns.h"
 #include "vars.h"
 extern void yyparse(void); // interpreter main loop
 
@@ -71,9 +72,9 @@ static int  prompt = 0;
 // main
 ////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[]) {
-  char* filename = NULL;
-  char* command  = NULL;
-  int tmpfile = 0;
+  char *filename = NULL;
+  char *command  = NULL;
+  char *expr     = NULL;
 
   // Parse arguments
   if (argc >= 2) {
@@ -99,16 +100,15 @@ int main(int argc, char* argv[]) {
     // -e EXPR on command line, copy to tmp file
     if (strchr(command, 'e')) {
       int i;
-      filename = tmpnam(NULL);
-      yyin = fopen(filename, "w");
-      if (!yyin) {
-        yyerror("Cannot create tmp file");
-        exit(1);
+      int len = 0;
+      for (i = 2; i < argc; ++i) len += strlen(argv[i]) + 1;
+      expr = malloc(len + 2);
+      for (i = 2; i < argc; ++i) {
+        strcat(expr, argv[i]);
+        strcat(expr, i < argc-1 ? " " : "\n");
       }
-      for (i = 2; i < argc; ++i) fputs(argv[i], yyin);
-      fputc('\n', yyin);
-      fclose(yyin);
-      tmpfile = 1;
+      strcat(expr, "\0\0");
+      filename = NULL;
     }
   }
 
@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
   // Prompt: tty - yes, script/pipe - no
   if (!filename) {
     yyin = stdin;
-    if (isatty(fileno(yyin))) prmt();;
+    if (!expr && isatty(fileno(yyin))) prmt();
   }
   else {
     yyin = fopen(filename, "r");
@@ -128,11 +128,17 @@ int main(int argc, char* argv[]) {
 
   // Run the actual calculator
   tNumDisplay(&output, 0, prompt);
+  YY_BUFFER_STATE yybs;
+  if (expr) {
+    yybs = yy_scan_buffer(expr, strlen(expr) + 2);
+    yy_switch_to_buffer(yybs);
+  }
   yyparse();
-
-  // EOF, Cleanup
-  fclose(yyin);
-  if (tmpfile) remove(filename);
+  if (expr) {
+    yy_delete_buffer(yybs);
+    free(expr);
+  }
+  if (filename) fclose(yyin);
   quit();
 }
 
