@@ -1,4 +1,4 @@
-szg 0.2
+szg 0.3
 
 Free software, distributed under the GNU GPL v3 license
 Copyright 2009-2012 SZABO Gergely <szg@subogero.com>
