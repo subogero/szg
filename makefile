@@ -154,12 +154,12 @@ tag: commit
 	$$EDITOR changelog; \
 	git tag -a -F changelog $$TAG HEAD; \
 
-publish:
+push:
 	@REMOTES=`git remote -v | sed -rn 's/^(.+)\t[^ ]+ \(push\)$$/\1/p'`; \
-	ORIGIN=`git remote -v \
-	| sed -rn 's,^origin\t(ssh://)?(.+)szg\.git \(push\)$$,\2,p'\
-	| sed 's,/~,:,'`; \
-	for REMOTE in $$REMOTES; do git push --all --tags $$REMOTE; done
+	for REMOTE in $$REMOTES; do \
+	  git push --tags $$REMOTE; \
+	  git push --all  $$REMOTE; \
+	done
 
 tarball: clean
 	export TAG=`sed -rn 's/^szg (.+)$$/\1/p' version.txt`; \
@@ -212,3 +212,5 @@ debs:
 	echo '3.0 (quilt)' > $(DEB)/source/format
 	cd $(REL)/szg-$(TAG); dpkg-buildpackage	-us -uc
 	lintian $(REL)/*.deb
+
+release: tag deb push
