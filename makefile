@@ -202,10 +202,11 @@ debs:
 	echo 'License: GPL-3'                        >> $(DEB)/copyright
 	echo ' See /usr/share/common-licenses/GPL-3' >> $(DEB)/copyright
 	echo 7 > $(DEB)/compat
-	for i in `git tag | sort -rh`; do git show $$i | sed -n '/^szg/,/^ --/p'; done \
+	for i in `git tag | sort -rg`; do git show $$i | sed -n '/^szg/,/^ --/p'; done \
 	| sed -r 's/^szg \((.+)\)$$/szg (\1-1) UNRELEASED; urgency=low/' \
 	| sed -r 's/^(.{,79}).*/\1/' \
 	> $(DEB)/changelog
+	$(EDITOR) $(DEB)/changelog
 	echo '#!/usr/bin/make -f' > $(DEB)/rules
 	echo '%:'                >> $(DEB)/rules
 	echo '	dh $$@'          >> $(DEB)/rules
