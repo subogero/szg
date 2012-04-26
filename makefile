@@ -132,8 +132,6 @@ commit:
 	  then git commit -a;     \
 	fi
 
-# Create tarballs for distribution
-# Tag HEAD and Create compressed tarball
 tag: commit
 	@echo 'Chose old tag to follow: '; \
 	select OLD in `git tag`; do break; done; \
@@ -147,12 +145,14 @@ tag: commit
 	echo "szg ($$TAG)" > changelog; \
 	if [ -n "$$OLD" ]; then \
 	  git log --pretty=format:"  * %h %an %s" $$OLD.. >> changelog; \
+	  echo >> changelog; \
 	else \
 	  echo '  * Initial release' >> changelog; \
 	fi; \
 	echo " -- `git config user.name` <`git config user.email`>  `date -R`" >> changelog; \
 	$$EDITOR changelog; \
 	git tag -a -F changelog $$TAG HEAD; \
+	rm changelog
 
 push:
 	@REMOTES=`git remote -v | sed -rn 's/^(.+)\t[^ ]+ \(push\)$$/\1/p'`; \
@@ -198,11 +198,9 @@ debs:
 	echo 'License: GPL-3'                        >> $(DEB)/copyright
 	echo ' See /usr/share/common-licenses/GPL-3' >> $(DEB)/copyright
 	echo 7 > $(DEB)/compat
-	git tag \
-	| sort -rh \
-	| xargs git show \
-	| sed -n '/^szg/,/^ --/p' \
+	for i in `git tag | sort -rh`; do git show $$i | sed -n '/^szg/,/^ --/p'; done \
 	| sed -r 's/^szg \((.+)\)$$/szg (\1-1) UNRELEASED; urgency=low/' \
+	| sed -r 's/^(.{,79}).*/\1/' \
 	> $(DEB)/changelog
 	echo '#!/usr/bin/make -f' > $(DEB)/rules
 	echo '%:'                >> $(DEB)/rules
