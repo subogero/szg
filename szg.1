@@ -55,7 +55,7 @@ simply typing
 And how many times have you mistyped something on a desktop calculator
 wishing to undo the last operation? Or wished to have more than one memory?
 .SH DESCRIPTION
-The main requirements for
+The main features of
 .BR szg (1)
 are:
 .br
@@ -149,9 +149,9 @@ Once in float mode, the commands
 .PP
 Switching back from floating-point mode to either signed or unsigned integer mode
 works with the commands
-.B s
+.B S
 and
-.B n
+.B N
 , respectively.
 .SS ASSIGNMENTS
 .BR szg (1)
@@ -229,7 +229,7 @@ may work, except if you have a file called 617 in you current dir,
 resulting in 617 instead of 42.
 .br
 .B szg -e \\\\x ffff \\\\d
-fails as the shell removes the backslashes. Use double backslashes or single quotes.
+fails as the shell removes the backslashes. Rather use the uppercase version of the commands: szg -e X ffff D
 .SH DIAGNOSTICS
 .BR szg (1)
 prints diagnostic messages to stderr, thus they appear on the terminal by

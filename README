@@ -14,7 +14,7 @@ Error messages (syntax error, division by zero) or stderr
 Unlimited undo
 Fair amount of memory registers (g .. z)
 User defined variables like $foo
-Operators ()~ */% +- &| =   ATTENTION: unary minus is ~ (tilde)
+Operators ()~ ^ */% +- &| =   ATTENTION: unary minus is ~ (tilde)
 Symbol _ means last result, like Perl/Python
 Missing identifier means _ (+5 means last result + 5) like Perl
 Math functions @s @c @a @l @e @r = sin cos atan log exp sqrt
@@ -26,6 +26,7 @@ Manual page
 
 Compilation Instructions
 ------------------------
+Source tarball at http://subogero.dyndns.org/git/release/
 It can be compiled and installed on Linux or Windows/Cygwin.
 Packages needed: gcc, make, flex, bison, mingw32
 On Windows, it runs both in Cygwin and Windows command line windows.
@@ -34,13 +35,19 @@ $ sudo make install # installs to /usr/bin (and C:\WINDOWS on Cygwin)
 
 Installation of Binaries
 ------------------------
-The tarball from http://subogero.dyndns.org/git/tarballs.pl contains
-compiled Linux and Windows binaries as well.
+Zip file from http://subogero.dyndns.org/git/release/ contains
+compiled Windows binaries as well.
 
 Download and extract in a new directory.
 Open a cygwin/terminal window there;
 Call “make install” or “sudo make install” (Linux)
 Or simply copy win/szg.exe to C:\WINDOWS if you don't have Cygwin.
+
+Debian packages
+---------------
+Add the lines below to /etc/apt/sources.list to install szg via apt-get:
+deb http://subogero.dyndns.org/git/release/ /
+deb-src http://subogero.dyndns.org/git/release/ /
 
 Examples
 --------
