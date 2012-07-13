@@ -14,9 +14,9 @@
 %%
 #.*$         ;
 [ \t]        ;
-[A-Z]        { print_on(); yylval.u8 = *yytext - 'A';                       return COMMAND;}
+[A-Z]        { print_on(); yylval.u8 = yytext[0] - 'A';                     return COMMAND;}
 \\[a-z]      { print_on(); yylval.u8 = yytext[1] - 'a';                     return COMMAND;}
-[g-z]        { print_on(); yylval.u8 = *yytext - 'g';                       return LETTER; }
+[g-z]        { print_on(); yylval.u8 = yytext[0] - 'a';                     return COMMAND; }
 [-+|]        { print_on(); yylval.u8 = *yytext;                             return OPADD; }
 [*/%&]       { print_on(); yylval.u8 = *yytext;                             return OPMUL; }
 \^           { print_on(); yylval.u8 = *yytext;                             return OPPOW; }

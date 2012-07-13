@@ -20,8 +20,6 @@ extern void yyparse(void); // interpreter main loop
 // Global definitions
 FILE* yyin;
 
-struct tNum regs[20];
-
 static void __na(void);
 static void bin (void);
 static void hex (void);
