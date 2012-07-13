@@ -32,7 +32,7 @@ static void dbg(char* term);
 
 %start list
 
-%token <u8>  LETTER COMMAND OPADD OPMUL OPPOW OPPRE
+%token <u8>  COMMAND OPADD OPMUL OPPOW OPPRE
 %token <id>  VAR
 %token <Num> NUMBER
 
@@ -55,7 +55,6 @@ list : // empty
 cmd  : COMMAND               { dbg("cmd");  commands[$1](); }
      ;
 stm  : expr                  { dbg("stm");  output = $1; outputPush(); }
-     | LETTER '=' expr       { dbg("ass");  regs[$1] = $3; }
      | VAR '=' expr          { dbg("var");  vars_set($1, &$3); }
      ;
 expr :                       { dbg("non");  outputGet(); $$ = output; }
@@ -65,7 +64,6 @@ expr :                       { dbg("non");  outputGet(); $$ = output; }
      | expr OPMUL expr       { dbg("omu");  $$ = tNumOpIn ($1, $2, $3); }
      | expr OPPOW expr       { dbg("opo");  $$ = tNumOpIn ($1, $2, $3); }
      | OPPRE expr            { dbg("opr");  $$ = tNumOpPre($1, $2); }
-     | LETTER                { dbg("var");  $$ = regs[$1]; }
      | VAR                   { dbg("var");  if (vars_get($1,&$$)) $$=output; }
      | NUMBER                { dbg("num");  $$ = $1; }
      ;
