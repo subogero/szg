@@ -131,22 +131,15 @@ static unsigned char hashfunc(char *key)
 void vars_dbg(void)
 {
   int i;
-  fprintf(stderr, "Variable-lookup hash-function: %s", 
-          VARS_HASH == 6 ? "fnv-1a"
-	: VARS_HASH == 5 ? "shift-add-xor"
-	: VARS_HASH == 4 ? "Bernstein-mod"
-	: VARS_HASH == 3 ? "Bernstein"
-	: VARS_HASH == 2 ? "rotate"
-	: VARS_HASH == 1 ? "xor"
-	:                  "add");
   for (i = 0; i < BUCKETS; ++i) {
     struct tList *this = buckets[i];
-    fprintf(stderr, "\n%3d ", i);
     while (this) {
-      fprintf(stderr, "%-12s ", this->key);
+      if (this->defined) {
+        printf("%s = ", this->key);
+        tNumPrint(&this->num, 1, 0, BASE_NA);
+      }
       this = this->next;
     }
   }
-  fprintf(stderr, "\n");
 }
 
