@@ -215,6 +215,7 @@ debs:
 	echo '3.0 (quilt)' > $(DEB)/source/format
 	cd $(REL)/szg-$(TAG); dpkg-buildpackage	-us -uc
 	lintian $(REL)/*.deb
+	fakeroot alien -kr $(REL)/*.deb; mv *.rpm $(REL)
 
 # Release
 release: tag deb push
