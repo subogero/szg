@@ -81,14 +81,17 @@ to stdout or the specified output FILE upon pressing
 .BR Enter .
 .SS EXPRESSIONS
 .BR szg (1)
-expressions are built of numbers (arbitrary coma-grouping allowed)
+expressions are built of
+.br
 .B [0-9a-f.,]+
-variables
-.B [g-z]
-user variables
+numbers (arbitrary coma-grouping allowed)
+.br
 .B $[a-z0-9_]+
-last result
+user variables
+.br
 .B _
+last result
+.br
 and operators listed below in descending precedence:
 .br
 .B ()
@@ -154,45 +157,40 @@ and
 .B N
 , respectively.
 .SS ASSIGNMENTS
-.BR szg (1)
-assignments are in the form of
-.BR [g-z]=expr .
-The expr may be incomplete, including the ulimate incomplete expression, the
-empty string, thus
-.B x=
-assigns the last result to x.
-.PP
 User-variables can be created on the fly, by assigning an expression to them.
-Their form is a dollar-sign plus any number of lowercase letters.
-.B $lifeuniverseeverything=6*7
-stores 42 into variable $lifeuniverseeverything, while
+Their form is a dollar-sign plus any number of lowercase letters, numbers
+and underscores.
+.B $life_universe_everything=6*7
+stores 42 into variable $life_universe_everything, while
 .B $bar=
 stores the last result in $bar.
 .PP
-Diagnostic command V or \\v shows the hash function for variable-lookup
-and the usage of the 16 hash-buckets. May be deprecated at any time.
+Command V v or \\v lists all variables with values.
 .SS COMMANDS
-Commands are single uppercase letters, or a backslash plus a lowercase letter.
+Commands are single upper- or lowercase letters, escape lowercase version with
+backslash \\ between [a-f] to avoid confusion with hex numbers.
 .PP
 B \\b binary I/O mode
 .br
-O \\o octal I/O mode
+O \\o o octal I/O mode
 .br
 D \\d decimal I/O mode
 .br
-X \\x hexadecimal I/O mode
+X \\x x hexadecimal I/O mode
 .PP
-N \\n unsigned (natural number) calculation mode
+N \\n n unsigned (natural number) calculation mode
 .br
-S \\s signed calculation mode
+S \\s s signed calculation mode
 .br
 F \\f floating-point calculation mode
 .PP
-P \\p toggle prompt
+P \\p p toggle prompt
 .br
-U \\u undo, unlimited depth, no redo
+U \\u u undo, unlimited depth, no redo
 .br
-Q \\q or ^D (EOF Unix) or ^C (interrupt) to quit
+V \\v v print all variables with values
+.br
+Q \\q q or ^D (EOF Unix) or ^C (interrupt) to quit
 .PP
 Signed / unsigned calculation modes affect only */% operations and decimal
 IO, nothing else.
