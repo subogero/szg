@@ -101,6 +101,7 @@ int main(int argc, char* argv[]) {
       int len = 0;
       for (i = 2; i < argc; ++i) len += strlen(argv[i]) + 1;
       expr = malloc(len + 2);
+      expr[0] = 0;
       for (i = 2; i < argc; ++i) {
         strcat(expr, argv[i]);
         strcat(expr, i < argc-1 ? " " : "\n");
