@@ -17,6 +17,7 @@ SHELL := /bin/bash
 # Target and sources
 BIN    := .bin
 WIN    := .win
+W64    := .w64
 REL    := .release
 
 # Windows/Unix targets compiled on Windows/Unix
@@ -48,6 +49,7 @@ LIBS   := -lm
 # Windows targets compiled on Windows/Unix
 ifdef SYSTEMROOT
 WC     := i686-pc-mingw32-gcc
+W64C   := x86_64-w64-mingw32-gcc
 WLIBS  :=
 else
 WC     := i586-mingw32msvc-gcc
@@ -74,6 +76,7 @@ BINDIR := $(DESTDIR)/usr/bin
 
 all: $(BIN)/$(TARGET)
 win: $(WIN)/$(WARGET)
+w64: $(W64)/$(WARGET)
 
 # Compile targets
 $(BIN)/$(TARGET): $(CSRC) $(HSRC) makefile usage.txt version.txt
@@ -82,6 +85,9 @@ $(BIN)/$(TARGET): $(CSRC) $(HSRC) makefile usage.txt version.txt
 $(WIN)/$(WARGET): $(CSRC) $(HSRC) makefile usage.txt version.txt
 	@if [ ! -d $(WIN) ]; then mkdir $(WIN); fi
 	$(WC) $(WFLAGS) -o $(WIN)/$(WARGET) $(WLIBS) $(CSRC) $(LIBS);
+$(W64)/$(WARGET): $(CSRC) $(HSRC) makefile usage.txt version.txt
+	@if [ ! -d $(W64) ]; then mkdir $(W64); fi
+	$(W64C) $(WFLAGS) -o $(W64)/$(WARGET) $(WLIBS) $(CSRC) $(LIBS);
 
 # tNum test-suite
 tNum:
