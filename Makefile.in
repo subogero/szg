@@ -15,18 +15,14 @@ export DESCR
 SHELL := /bin/bash
 
 # Target and sources
-BIN    := .bin
-WIN    := .win
-W64    := .w64
-REL    := .release
+BIN := .bin
+WIN := .win
+W64 := .w64
+REL := .release
 
 # Windows/Unix targets compiled on Windows/Unix
 WARGET := szg.exe
-ifdef SYSTEMROOT
-TARGET := szg.exe
-else
-TARGET := szg
-endif
+TARGET :=
 
 # Defines
 ifneq "$(VARS)" "no"
@@ -47,25 +43,21 @@ CFLAGS := -g -Wno-format -Wmissing-prototypes $(CDEFS)
 LIBS   := -lm
 
 # Windows targets compiled on Windows/Unix
-ifdef SYSTEMROOT
-WC     := i686-pc-mingw32-gcc
-W64C   := x86_64-w64-mingw32-gcc
-WLIBS  :=
-else
-WC     := i586-mingw32msvc-gcc
-WLIBS  := -L/usr/i586-mingw32msvc/lib -I/usr/i586-mingw32msvc/include
-endif
+WC :=
+WLIBS :=
+W64C :=
+W64LIBS :=
 
 # Sources
-CSRC   := szg.c grammar.c output.c tNum.c patterns.c arg1.c
-HSRC   := szg.h output.h tNum.h arg1.h version.h usage.h
+CSRC := szg.c grammar.c output.c tNum.c patterns.c arg1.c
+HSRC := szg.h output.h tNum.h arg1.h version.h usage.h
 
 ifneq "$(VARS)" "no"
 CSRC   += vars.c
 HSRC   += vars.h
 endif
 
-TMPF   := patterns.c patterns.h grammar.c grammar.h tNumTest usage.h version.h *~ *.tar.gz
+TMPF := patterns.c patterns.h grammar.c grammar.h tNumTest usage.h version.h *~ *.tar.gz
 
 MANPAGE:= szg.1
 MANDIR := $(DESTDIR)/usr/share/man/man1
@@ -74,20 +66,19 @@ BINDIR := $(DESTDIR)/usr/bin
 ####### Rules ########
 .PHONY: all tnum install uninstall clean commit tarball tag release deb
 
-all: $(BIN)/$(TARGET)
-win: $(WIN)/$(WARGET)
-w64: $(W64)/$(WARGET)
-
 # Compile targets
-$(BIN)/$(TARGET): $(CSRC) $(HSRC) makefile usage.txt version.txt
+all: $(BIN)/$(TARGET)
+$(BIN)/$(TARGET): $(CSRC) $(HSRC) Makefile usage.txt version.txt
 	@if [ ! -d $(BIN) ]; then mkdir $(BIN); fi
 	$(CC) $(CFLAGS) -o $(BIN)/$(TARGET) $(CSRC) $(LIBS)
-$(WIN)/$(WARGET): $(CSRC) $(HSRC) makefile usage.txt version.txt
+win: $(WIN)/$(WARGET)
+$(WIN)/$(WARGET): $(CSRC) $(HSRC) Makefile usage.txt version.txt
 	@if [ ! -d $(WIN) ]; then mkdir $(WIN); fi
-	$(WC) $(WFLAGS) -o $(WIN)/$(WARGET) $(WLIBS) $(CSRC) $(LIBS);
-$(W64)/$(WARGET): $(CSRC) $(HSRC) makefile usage.txt version.txt
+	$(WC) $(CFLAGS) -o $(WIN)/$(WARGET) $(WLIBS) $(CSRC) $(LIBS);
+w64: $(W64)/$(WARGET)
+$(W64)/$(WARGET): $(CSRC) $(HSRC) Makefile usage.txt version.txt
 	@if [ ! -d $(W64) ]; then mkdir $(W64); fi
-	$(W64C) $(WFLAGS) -o $(W64)/$(WARGET) $(WLIBS) $(CSRC) $(LIBS);
+	$(W64C) $(CFLAGS) -o $(W64)/$(WARGET) $(W64LIBS) $(CSRC) $(LIBS);
 
 # tNum test-suite
 tNum:
@@ -116,21 +107,35 @@ install:
 	@mkdir -p $(MANDIR)
 	@cp -f $(MANPAGE) $(MANDIR)
 	@gzip --best $(MANDIR)/$(MANPAGE)
-	@if [ -n "$(SYSTEMROOT)" ];                        \
-	  then cp -f $(WIN)/$(TARGET) /cygdrive/c/WINDOWS; \
-	fi
+	@cp -f $(WIN)/$(WARGET) /cygdrive/c/WINDOWS
+	@cp -f $(W64)/$(WARGET) /cygdrive/c/WINDOWS
 
 # Uninstall from c/cygdrive/WINDOWS /usr/bin
 uninstall:
 	@rm -f $(BINDIR)/$(TARGET)
 	@rm -f $(MANDIR)/$(MANPAGE).gz
-	@if [ -n "$(SYSTEMROOT)" ];                 \
-	  then rm -f /cygdrive/c/WINDOWS/$(TARGET); \
-	fi
+	@rm -f /cygdrive/c/WINDOWS/$(WARGET)
 
 # Remove all generated files
 clean:
-	@rm -fr $(BIN) $(WIN) $(TMPF)
+	@rm -rf $(BIN) $(WIN) $(W64) $(TMPF)
+
+# Source tarball and zip file with Win32 executable
+tarball: clean
+	export TAG=`sed -rn 's/^szg (.+)$$/\1/p' version.txt`; \
+	$(MAKE) balls
+balls:
+	mkdir -p $(REL)/szg-$(TAG); \
+	cp -rt $(REL)/szg-$(TAG) *; \
+	cd $(REL); \
+	tar -czf szg_$(TAG).tar.gz szg-$(TAG); \
+	[ -f *zip ] && rm *zip; \
+	zip -r   szg_$(TAG).zip    szg-$(TAG); \
+	cd ..; \
+	$(MAKE) $(WIN)/$(WARGET); \
+	zip $(REL)/szg_$(TAG).zip $(WIN)/$(WARGET)
+	$(MAKE) $(W64)/$(WARGET); \
+	zip $(REL)/szg_$(TAG).zip $(W64)/$(WARGET)
 
 # Commit to git repository
 commit:
@@ -169,21 +174,6 @@ push:
 	  git push --all  $$REMOTE; \
 	done
 
-# Source tarball and zip file with Win32 executable
-tarball: clean
-	export TAG=`sed -rn 's/^szg (.+)$$/\1/p' version.txt`; \
-	$(MAKE) balls
-balls:
-	mkdir -p $(REL)/szg-$(TAG); \
-	cp -rt $(REL)/szg-$(TAG) *; \
-	cd $(REL); \
-	tar -czf szg_$(TAG).tar.gz szg-$(TAG); \
-	[ -f *zip ] && rm *zip; \
-	zip -r   szg_$(TAG).zip    szg-$(TAG); \
-	cd ..; \
-	$(MAKE) $(WIN)/$(WARGET); \
-	zip -j $(REL)/szg_$(TAG).zip $(WIN)/$(WARGET)
-
 # Source and binary Debian packages
 deb: tarball $(BIN)/$(TARGET)
 	export TAG=`sed -rn 's/^szg (.+)$$/\1/p' version.txt`; \
@@ -193,20 +183,20 @@ debs:
 	-rm $(REL)/*.deb
 	cp -f $(REL)/szg_$(TAG).tar.gz $(REL)/szg_$(TAG).orig.tar.gz 
 	mkdir -p $(DEB)
-	echo 'Source: szg'                                            > $(DEB)/control
-	echo 'Section: math'                                         >> $(DEB)/control
-	echo 'Priority: optional'                                    >> $(DEB)/control
-	sed -nr 's/^C.+ [-0-9]+ (.+)$$/Maintainer: \1/p' version.txt >> $(DEB)/control
-	echo 'Build-Depends: debhelper, flex, bison'                 >> $(DEB)/control
-	echo 'Standards-version: 3.8.4'                              >> $(DEB)/control
-	echo                                                         >> $(DEB)/control
-	echo 'Package: szg'                                          >> $(DEB)/control
-	echo 'Architecture: any'                                     >> $(DEB)/control
-	echo 'Depends: $${shlibs:Depends}, $${misc:Depends}'         >> $(DEB)/control
-	echo "$$DESCR"                                               >> $(DEB)/control
-	grep Copyright version.txt                    > $(DEB)/copyright
-	echo 'License: GPL-3'                        >> $(DEB)/copyright
-	echo ' See /usr/share/common-licenses/GPL-3' >> $(DEB)/copyright
+	echo 'Source: szg'                                            >$(DEB)/control
+	echo 'Section: math'                                         >>$(DEB)/control
+	echo 'Priority: optional'                                    >>$(DEB)/control
+	sed -nr 's/^C.+ [-0-9]+ (.+)$$/Maintainer: \1/p' version.txt >>$(DEB)/control
+	echo 'Build-Depends: debhelper, flex, bison'                 >>$(DEB)/control
+	echo 'Standards-version: 3.8.4'                              >>$(DEB)/control
+	echo                                                         >>$(DEB)/control
+	echo 'Package: szg'                                          >>$(DEB)/control
+	echo 'Architecture: any'                                     >>$(DEB)/control
+	echo 'Depends: $${shlibs:Depends}, $${misc:Depends}'         >>$(DEB)/control
+	echo "$$DESCR"                                               >>$(DEB)/control
+	grep Copyright version.txt                    >$(DEB)/copyright
+	echo 'License: GPL-3'                        >>$(DEB)/copyright
+	echo ' See /usr/share/common-licenses/GPL-3' >>$(DEB)/copyright
 	echo 7 > $(DEB)/compat
 	for i in `git tag | sort -rg`; do git show $$i | sed -n '/^szg/,/^ --/p'; done \
 	| sed -r 's/^szg \((.+)\)$$/szg (\1-1) UNRELEASED; urgency=low/' \
