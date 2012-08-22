@@ -209,7 +209,15 @@ debs:
 	chmod 755 $(DEB)/rules
 	mkdir -p $(DEB)/source
 	echo '3.0 (quilt)' > $(DEB)/source/format
-	cd $(REL)/szg-$(TAG); dpkg-buildpackage	-us -uc
+	@cd $(REL)/szg-$(TAG) && \
+	echo && echo List of PGP keys for signing package: && \
+	gpg -K | grep uid && \
+	read -ep 'Enter key ID (part of name or alias): ' KEYID; \
+	if [ "$$KEYID" ]; then \
+	  dpkg-buildpackage -k$$KEYID; \
+	else \
+	  dpkg-buildpackage -us -uc; \
+	fi
 	lintian $(REL)/*.deb
 	fakeroot alien -kr $(REL)/*.deb; mv *.rpm $(REL)
 
