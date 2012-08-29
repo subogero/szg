@@ -1,6 +1,6 @@
 /*****************************************************************************
 * (c) SZABO Gergely, 2009
-* Free software, distributed under the GNU GPL license
+* Free software, distributed under the GNU GPL v3 license
 * There is absolutely no warranty.
 *****************************************************************************/
 // Utility to display Usage/Version text and exit if arg1 is "-h"/"-V"
