@@ -1,6 +1,6 @@
 /*****************************************************************************
 * (c) SZABO Gergely, 2009
-* Free software, distributed under the GNU GPL v3 license
+* Free software, distributed under the WTFPL license
 * There is absolutely no warranty.
 *****************************************************************************/
 // Dependencies

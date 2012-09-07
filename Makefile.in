@@ -1,6 +1,6 @@
 ##############################################################################
 # (c) SZABO Gergely, 2009
-# Free software, distributed under the GNU GPL v3 license
+# Free software, distributed under the WTFPL license
 # There is absolutely no warranty.
 ##############################################################################
 define DESCR
@@ -195,8 +195,8 @@ debs:
 	echo 'Depends: $${shlibs:Depends}, $${misc:Depends}'         >>$(DEB)/control
 	echo "$$DESCR"                                               >>$(DEB)/control
 	grep Copyright version.txt                    >$(DEB)/copyright
-	echo 'License: GPL-3'                        >>$(DEB)/copyright
-	echo ' See /usr/share/common-licenses/GPL-3' >>$(DEB)/copyright
+	echo 'License: WTFPL'                        >>$(DEB)/copyright
+	echo ' See /usr/share/common-licenses/WTFPL' >>$(DEB)/copyright
 	echo 7 > $(DEB)/compat
 	for i in `git tag | sort -rg`; do git show $$i | sed -n '/^szg/,/^ --/p'; done \
 	| sed -r 's/^szg \((.+)\)$$/szg (\1-1) UNRELEASED; urgency=low/' \
