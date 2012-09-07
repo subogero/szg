@@ -1,4 +1,4 @@
-szg 0.5
+szg 1.0
 
 Free software, distributed under the WTFPL license
 Copyright 2009-2012 SZABO Gergely <szg@subogero.com>
