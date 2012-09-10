@@ -10,7 +10,7 @@
 #include <math.h>
 
 static void CommaStrip(char *yytext);
-static void CommaGroup(char *binary, unsigned int val);
+static void CommaGroup(char *binary, unsigned int val, int ieee754);
 static struct tNum tNumPower(struct tNum src1, struct tNum src2);
 
 // Value in actual type (can be lvalue)
@@ -189,7 +189,7 @@ void tNumPrint(struct tNum* this, int num, int prompt, char base) {
   if (base == 2) {
     char* postfix = strchr(formats[index], '\n');
     char binary[40] = "";
-    CommaGroup(binary, this->val.n);
+    CommaGroup(binary, this->val.n, this->type == T_FLOAT);
     strcat(binary, postfix);
     printf("%s", binary);
   } 
@@ -228,13 +228,17 @@ static void CommaStrip(char *yytext)
   }
 }
 
-static void CommaGroup(char *binary, unsigned int val)
+static void CommaGroup(char *binary, unsigned int val, int ieee754)
 {
   int bit = 31;
   while (bit >= 0) {
     unsigned int mask = 1U << (unsigned int)bit;
     strcat(binary, val & mask ? "1" : "0");
-    if (bit && bit % 8 == 0) strcat(binary, ",");
+    if (bit &&
+        (ieee754
+         ? bit == 31 || bit == 23
+         : bit % 8 == 0))
+      strcat(binary, ",");
     bit--;
   }
 }
