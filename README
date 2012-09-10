@@ -3,29 +3,28 @@ szg is a command line calculator with an extremely fast and intuitive workflow.
 Features
 --------
 32-bit integer or floating-point arithmetic
-Decimal, binary, octal or hexadecimal format (commands D, B, O, X)
+Missing operands or _ anywhere are replaced with the last result:
+  '*'  takes the square of the last result
+  '-2' substracts 2 from the last result, use ~2 for unary minus
 Input:
   szg           - expressions, variable assignments and commands on stdin
   szg <FILE>    - from file specified on command line
   szg -e <expr> - expression directly from the command line
-Output of calculations on stdout
-Prompt indicating integer/float and bin/oct/dec/hex mode
-Error messages (syntax error, division by zero) or stderr
+Comma-grouping of input allowed
 Unlimited undo
-User defined variables like $foo
 Operators ()~ ^ */% +- &| =   ATTENTION: unary minus is ~ (tilde)
-Symbol _ means last result, like Perl/Python
-Missing identifier means _ (+5 means last result + 5) like Perl
 Math functions @s @c @a @l @e @r = sin cos atan log exp sqrt
-Optional unsigned arithmetic (commands N, S)
-Floating-point mode never upon division, only upon user request, like Python
+User defined variables like $foo
+Decimal, binary, octal or hexadecimal format (commands D, B, O, X)
+Unsigned integer, signed integer and float modes (commands N, S, F)
+Prompt shows unsigned/integer/float mode and bin/oct/dec/hex format (DdBbOoXxf)
+Floating-point mode never upon division, only upon F or float literal
 Combination of expressions/commands on same line
 Comments starting with #
-Manual page
 
 Examples
 --------
-d XffffD  # Convert hexadecimal to decimal
+d XffffD  # Prompt d: signed int mode, decimal format. Convert hex to decimal
 65535
 d 4+3     # Addition
 7
@@ -33,43 +32,10 @@ d *       # Both operands missing, means 7*7
 49
 d /2      # integer division, result remains integer
 24
-d /5.0    # floating point division upon request
+d /5.0    # floating point division upon request, shown by prompt f
 4.8
 f @r      # square root, missing operand, means @r(4.8)
 2.19089
 f B       # prompt shows float mode, look how bits are stored in memory
 01000000,00001100,00110111,10001100
 f $foo=   # store in variable $foo
-
-Compilation Instructions
-------------------------
-Source tarball at http://linux.subogero.com/deb/
-It can be compiled and installed on Linux or Windows/Cygwin.
-Packages needed: gcc, make, flex, bison, mingw32 (for native Win binaries only)
-On Windows, it runs both in Cygwin and Windows command line windows.
-$ ./configure
-$ make
-# make install # installs to /usr/bin (and C:\WINDOWS on Cygwin)
-
-Installation of Windows Binaries
---------------------------------
-Zip files at http://linux.subogero.com/deb/ contain compiled Windows binaries.
-Download and extract in a new directory.
-Open a Cygwin-terminal window there and type “make install”.
-Or simply copy .win/szg.exe (Win32) or .w64/szg.exe (Win x64) to C:\WINDOWS
-if you don't have Cygwin.
-
-Debian packages
----------------
-Add the lines below to /etc/apt/sources.list to install szg via apt-get:
-deb http://linux.subogero.com/deb/ /
-deb-src http://linux.subogero.com/deb/ /
-
-Add my PGP public-key to verify package authenticity:
-# curl linux.subogero.com/deb/subogero.asc | apt-key add -
-
-Finally, install szg:
-# apt-get update
-# apt-get install szg
-
-Note: rpm packages are available at the same locations too.

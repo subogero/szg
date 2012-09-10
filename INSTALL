@@ -1,0 +1,32 @@
+Compilation Instructions
+------------------------
+Source tarball at http://linux.subogero.com/deb/
+It can be compiled and installed on Linux or Windows/Cygwin.
+Packages needed: gcc, make, flex, bison, mingw32 (for native Win binaries only)
+On Windows, it runs both in Cygwin and Windows command line windows.
+$ ./configure
+$ make
+# make install # installs to /usr/bin (and C:\WINDOWS on Cygwin)
+
+Installation of Windows Binaries
+--------------------------------
+Zip files at http://linux.subogero.com/deb/ contain compiled Windows binaries.
+Download and extract in a new directory.
+Open a Cygwin-terminal window there and type “make install”.
+Or simply copy .win/szg.exe (Win32) or .w64/szg.exe (Win x64) to C:\WINDOWS
+if you don't have Cygwin.
+
+Debian packages
+---------------
+Add the lines below to /etc/apt/sources.list to install szg via apt-get:
+deb http://linux.subogero.com/deb/ /
+deb-src http://linux.subogero.com/deb/ /
+
+Add my PGP public-key to verify package authenticity:
+# curl linux.subogero.com/deb/subogero.asc | apt-key add -
+
+Finally, install szg:
+# apt-get update
+# apt-get install szg
+
+Note: rpm packages are available at the same location too.
