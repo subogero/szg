@@ -28,6 +28,7 @@ struct tNum tNumOpIn (struct tNum src1, char op, struct tNum src2);
 struct tNum tNumOpPre(char op, struct tNum src);
 int  tNumParse       (struct tNum *this, char *yytext);
 void tNumPrint       (struct tNum *this, int num, int prompt, char base);
+int tNumBase         (struct tNum *this, char base);
 #define tNumDisplay(this,num,prompt) tNumPrint(this,num,prompt,BASE_NA)
 
 #endif

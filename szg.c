@@ -86,10 +86,10 @@ int main(int argc, char* argv[]) {
 
   // Commands found
   if (command != NULL) {
-    if (strchr(command, 'b')) output.base =  2;
-    if (strchr(command, 'o')) output.base =  8;
-    if (strchr(command, 'd')) output.base = 10;
-    if (strchr(command, 'x')) output.base = 16;
+    if (strchr(command, 'b')) tNumBase(&output,  2);
+    if (strchr(command, 'o')) tNumBase(&output,  8);
+    if (strchr(command, 'd')) tNumBase(&output, 10);
+    if (strchr(command, 'x')) tNumBase(&output, 16);
     if (strchr(command, 'n')) natn();
     if (strchr(command, 's')) sign();
     if (strchr(command, 'f')) fltn();
@@ -171,10 +171,10 @@ int yyerror(const char *s) {
 // command callbacks
 ////////////////////////////////////////////////////////////////////////////////
 static void __na(void) { yyerror("unknown command");                  }
-static void bin (void) { output.base =  2;              outputPush(); }
-static void oct (void) { output.base =  8;              outputPush(); }
-static void dec (void) { output.base = 10;              outputPush(); }
-static void hex (void) { output.base = 16;              outputPush(); }
+static void bin (void) { if (tNumBase(&output,  2))     outputPush(); }
+static void oct (void) { if (tNumBase(&output,  8))     outputPush(); }
+static void dec (void) { if (tNumBase(&output, 10))     outputPush(); }
+static void hex (void) { if (tNumBase(&output, 16))     outputPush(); }
 static void natn(void) { tNum2type(&output, T_NATURAL); outputPush(); }
 static void sign(void) { tNum2type(&output, T_SIGNED);  outputPush(); }
 static void fltn(void) { tNum2type(&output, T_FLOAT);   outputPush(); }

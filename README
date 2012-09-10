@@ -36,6 +36,7 @@ d /5.0    # floating point division upon request, shown by prompt f
 4.8
 f @r      # square root, missing operand, means @r(4.8)
 2.19089
-f B       # prompt shows float mode, look how bits are stored in memory
+f B       # look at the bitwise storage of the float number in memory
 01000000,00001100,00110111,10001100
+2.19089
 f $foo=   # store in variable $foo
