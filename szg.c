@@ -8,7 +8,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
 #include "arg1.h"
 #include "szg.h"
 #include "output.h"
