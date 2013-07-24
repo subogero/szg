@@ -54,11 +54,11 @@ list : // empty
      ;
 cmd  : COMMAND               { dbg("cmd");  commands[$1](); }
      ;
-stm  : expr                  { dbg("stm");  output = $1; outputPush(); }
+stm  : expr                  { dbg("stm");  output = $1; output_push(); }
      | VAR '=' expr          { dbg("var");  vars_set($1, &$3); }
      ;
-expr :                       { dbg("non");  outputGet(); $$ = output; }
-     | '_'                   { dbg("unl");  outputGet(); $$ = output; }
+expr :                       { dbg("non");  output_get(); $$ = output; }
+     | '_'                   { dbg("unl");  output_get(); $$ = output; }
      | '(' expr ')'          { dbg("par");  $$ = $2; }
      | expr OPADD expr       { dbg("oad");  $$ = tNumOpIn ($1, $2, $3); }
      | expr OPMUL expr       { dbg("omu");  $$ = tNumOpIn ($1, $2, $3); }

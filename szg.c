@@ -169,15 +169,15 @@ int yyerror(const char *s) {
 ////////////////////////////////////////////////////////////////////////////////
 // command callbacks
 ////////////////////////////////////////////////////////////////////////////////
-static void __na(void) { yyerror("unknown command");                  }
-static void bin (void) { if (tNumBase(&output,  2))     outputPush(); }
-static void oct (void) { if (tNumBase(&output,  8))     outputPush(); }
-static void dec (void) { if (tNumBase(&output, 10))     outputPush(); }
-static void hex (void) { if (tNumBase(&output, 16))     outputPush(); }
-static void natn(void) { tNum2type(&output, T_NATURAL); outputPush(); }
-static void sign(void) { tNum2type(&output, T_SIGNED);  outputPush(); }
-static void fltn(void) { tNum2type(&output, T_FLOAT);   outputPush(); }
-static void prmt(void) { prompt = !prompt;                            }
-static void quit(void) { printf("\r"); exit(0);                       }
-static void vars(void) { vars_dbg();                                  }
-static void undo(void) {                                outputPop();  }
+static void __na(void) { yyerror("unknown command");                   }
+static void bin (void) { if (tNumBase(&output,  2))     output_push(); }
+static void oct (void) { if (tNumBase(&output,  8))     output_push(); }
+static void dec (void) { if (tNumBase(&output, 10))     output_push(); }
+static void hex (void) { if (tNumBase(&output, 16))     output_push(); }
+static void natn(void) { tNum2type(&output, T_NATURAL); output_push(); }
+static void sign(void) { tNum2type(&output, T_SIGNED);  output_push(); }
+static void fltn(void) { tNum2type(&output, T_FLOAT);   output_push(); }
+static void prmt(void) { prompt = !prompt;                             }
+static void quit(void) { printf("\r"); exit(0);                        }
+static void vars(void) { vars_dbg();                                   }
+static void undo(void) {                                output_pop();  }
