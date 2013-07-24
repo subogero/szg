@@ -19,7 +19,6 @@ struct tStack {
   struct tStack* pLnk;
 };
 
-static char dirty = 0; // output != top-of-stack
 static struct tStack* pStack = NULL;
 static struct tNum DefaultData = { { 0 }, T_SIGNED, 10 };
 
@@ -30,23 +29,16 @@ void outputGet(void) {
   output = pStack == NULL
          ? DefaultData
          : pStack->Data;
-  dirty = 0;
 }
 
 // Pop
 void outputPop(void) {
-  // if output clean, pop twice
-  if (!dirty) {
-    dirty = 1;
-    outputPop();
-  }
-  if (pStack == NULL) output = DefaultData;
-  else {
+  if (pStack != NULL) {
     struct tStack* pTop = pStack;
-    output = pTop->Data;
     pStack = pTop->pLnk;
     free(pTop);
   }
+  output = pStack != NULL ? pStack->Data : DefaultData;
 }
 
 // Push
@@ -61,5 +53,12 @@ void outputPush(void) {
     while (pStack) (void)outputPop();
     DefaultData = output;
   }
-  dirty = 0;
+}
+
+void outputShow(void) {
+  struct tStack* this = pStack;
+  while (this != NULL) {
+    tNumDisplay(&this->Data, 1, 0);
+    this = this->pLnk;
+  }
 }

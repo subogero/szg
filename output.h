@@ -8,3 +8,4 @@ extern struct tNum output;
 void outputGet (void);
 void outputPop (void);
 void outputPush(void);
+void outputShow(void);
