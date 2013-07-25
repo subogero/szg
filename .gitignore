@@ -7,8 +7,8 @@ grammar.c
 grammar.h
 patterns.c
 patterns.h
-tNum
-tNum.exe
+num
+num.exe
 vars
 vars.exe
 Release.txt

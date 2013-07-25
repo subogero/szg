@@ -1,4 +1,4 @@
-#include "tNum.h"
+#include "num.h"
 #include "vars.h"
 #include <stdio.h>
 #include <string.h>

@@ -6,7 +6,7 @@
 #ifndef __vars
 #define __vars
 
-#include "tNum.h"
+#include "num.h"
 
 char *vars_alloc(char *key);
 void vars_set(char *key, struct tNum *num);

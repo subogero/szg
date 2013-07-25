@@ -49,15 +49,15 @@ W64C :=
 W64LIBS :=
 
 # Sources
-CSRC := szg.c grammar.c output.c tNum.c patterns.c arg1.c
-HSRC := szg.h output.h tNum.h arg1.h version.h usage.h
+CSRC := szg.c grammar.c output.c num.c patterns.c arg1.c
+HSRC := szg.h output.h num.h arg1.h version.h usage.h
 
 ifneq "$(VARS)" "no"
 CSRC   += vars.c
 HSRC   += vars.h
 endif
 
-TMPF := patterns.c patterns.h grammar.c grammar.h tNumTest usage.h version.h *~ *.tar.gz
+TMPF := patterns.c patterns.h grammar.c grammar.h num usage.h version.h *~ *.tar.gz
 
 MANPAGE:= szg.1
 MANDIR := $(DESTDIR)/usr/share/man/man1
@@ -80,13 +80,13 @@ $(W64)/$(WARGET): $(CSRC) $(HSRC) Makefile usage.txt version.txt
 	@if [ ! -d $(W64) ]; then mkdir $(W64); fi
 	$(W64C) $(CFLAGS) -o $(W64)/$(WARGET) $(W64LIBS) $(CSRC) $(LIBS);
 
-# tNum test-suite
-tNum:
-	@$(CC) $(CFLAGS) -o tNum tNum.c tNumTest.c
+# num test-suite
+num:
+	@$(CC) $(CFLAGS) -lm -o num num.c num_test.c
 
 # vars test-suite
 vars:
-	@$(CC) $(CFLAGS) -o vars vars.c tNum.c varsTest.c
+	@$(CC) $(CFLAGS) -o vars vars.c num.c varsTest.c
 
 # c/h from y (yacc)
 %.c: %.y

@@ -4,7 +4,7 @@
 * There is absolutely no warranty.
 *****************************************************************************/
 %{
-#include "tNum.h"
+#include "num.h"
 %}
 
 %union {

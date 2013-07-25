@@ -3,7 +3,7 @@
 * Free software, distributed under the WTFPL license
 * There is absolutely no warranty.
 *****************************************************************************/
-#include "tNum.h"
+#include "num.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

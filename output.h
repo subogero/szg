@@ -4,7 +4,7 @@
 * There is absolutely no warranty.
 ******************************************************************************/
 /* Undo stack for the outputs of all previous statements  */
-#include "tNum.h"
+#include "num.h"
 
 /* Output of the last statement stored here */
 extern struct tNum output;

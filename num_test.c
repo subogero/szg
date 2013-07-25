@@ -1,4 +1,4 @@
-#include "tNum.h"
+#include "num.h"
 int main(void) {
   struct tNum n1, n2;
 
