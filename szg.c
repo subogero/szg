@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Run the actual calculator */
-	tNumDisplay(&output, 0, prompt);
+	num_display(&output, 0, prompt);
 	YY_BUFFER_STATE yybs;
 	if (expr) {
 		yybs = yy_scan_buffer(expr, strlen(expr) + 2);
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 /* Print a number in the actual base-system */
 void print(void)
 {
-	tNumDisplay(&output, print_req, prompt);
+	num_display(&output, print_req, prompt);
 	fflush(NULL);
 	print_req = 0;
 }
@@ -159,13 +159,13 @@ int yyerror(const char *s)
 
 /* command callbacks */
 static void __na(void) { yyerror("unknown command");                   }
-static void bin (void) { if (tNumBase(&output,  2))     output_push(); }
-static void oct (void) { if (tNumBase(&output,  8))     output_push(); }
-static void dec (void) { if (tNumBase(&output, 10))     output_push(); }
-static void hex (void) { if (tNumBase(&output, 16))     output_push(); }
-static void natn(void) { tNum2type(&output, T_NATURAL); output_push(); }
-static void sign(void) { tNum2type(&output, T_SIGNED);  output_push(); }
-static void fltn(void) { tNum2type(&output, T_FLOAT);   output_push(); }
+static void bin (void) { if (num_base(&output,  2))     output_push(); }
+static void oct (void) { if (num_base(&output,  8))     output_push(); }
+static void dec (void) { if (num_base(&output, 10))     output_push(); }
+static void hex (void) { if (num_base(&output, 16))     output_push(); }
+static void natn(void) { num_2type(&output, T_NATURAL); output_push(); }
+static void sign(void) { num_2type(&output, T_SIGNED);  output_push(); }
+static void fltn(void) { num_2type(&output, T_FLOAT);   output_push(); }
 static void prmt(void) { prompt = !prompt;                             }
 static void quit(void) { printf("\r"); exit(0);                        }
 static void vars(void) { vars_dbg();                                   }

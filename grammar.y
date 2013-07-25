@@ -10,7 +10,7 @@
 %union {
 	char u8;
 	char *id;
-	struct tNum Num;
+	struct num n;
 }
 
 %{
@@ -34,9 +34,9 @@ static void dbg(char* term);
 
 %token <u8>  COMMAND OPADD OPMUL OPPOW OPPRE
 %token <id>  VAR
-%token <Num> NUMBER
+%token <n> NUMBER
 
-%type <Num> expr
+%type <n> expr
 
 %left OPADD        // additive operators       +-|
 %left OPMUL        // multiplicative operators */%&
@@ -60,10 +60,10 @@ stm  : expr                  { dbg("stm");  output = $1; output_push(); }
 expr :                       { dbg("non");  output_get(); $$ = output; }
      | '_'                   { dbg("unl");  output_get(); $$ = output; }
      | '(' expr ')'          { dbg("par");  $$ = $2; }
-     | expr OPADD expr       { dbg("oad");  $$ = tNumOpIn ($1, $2, $3); }
-     | expr OPMUL expr       { dbg("omu");  $$ = tNumOpIn ($1, $2, $3); }
-     | expr OPPOW expr       { dbg("opo");  $$ = tNumOpIn ($1, $2, $3); }
-     | OPPRE expr            { dbg("opr");  $$ = tNumOpPre($1, $2); }
+     | expr OPADD expr       { dbg("oad");  $$ = num_infix ($1, $2, $3); }
+     | expr OPMUL expr       { dbg("omu");  $$ = num_infix ($1, $2, $3); }
+     | expr OPPOW expr       { dbg("opo");  $$ = num_infix ($1, $2, $3); }
+     | OPPRE expr            { dbg("opr");  $$ = num_prefix($1, $2); }
      | VAR                   { dbg("var");  if (vars_get($1,&$$)) $$=output; }
      | NUMBER                { dbg("num");  $$ = $1; }
      ;

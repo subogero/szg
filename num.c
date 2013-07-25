@@ -11,7 +11,7 @@
 
 static void CommaStrip(char *yytext);
 static void CommaGroup(char *binary, unsigned int val, int ieee754);
-static struct tNum tNumPower(struct tNum src1, struct tNum src2);
+static struct num tNumPower(struct num src1, struct num src2);
 
 // Value in actual type (can be lvalue)
 #define VALUE(this) ( (this)->type == T_NATURAL ? (this)->val.n \
@@ -21,7 +21,7 @@ static struct tNum tNumPower(struct tNum src1, struct tNum src2);
 ////////////////////////////////////////////////////////////////////////////////
 // Type Conversion
 ////////////////////////////////////////////////////////////////////////////////
-void tNum2type(struct tNum *this, char type) {
+void num_2type(struct num *this, char type) {
   switch (type) {
     case T_FLOAT:
       this->val.f = (float)VALUE(this);
@@ -36,15 +36,15 @@ void tNum2type(struct tNum *this, char type) {
   }
 }
 
-void tNumMatchType(struct tNum *this, struct tNum *that) {
-  if      (this->type < that->type) tNum2type(this, that->type);
-  else if (that->type < this->type) tNum2type(that, this->type);
+void num_matchtype(struct num *this, struct num *that) {
+  if      (this->type < that->type) num_2type(this, that->type);
+  else if (that->type < this->type) num_2type(that, this->type);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Infix operators
 ////////////////////////////////////////////////////////////////////////////////
-struct tNum tNumOpIn(struct tNum src1, char op, struct tNum src2) {
+struct num num_infix(struct num src1, char op, struct num src2) {
   // Division by zero check
   if ((op == '/' || op == '%') && !src2.val.n) {
     fprintf(stderr, "division by zero\n");
@@ -60,7 +60,7 @@ struct tNum tNumOpIn(struct tNum src1, char op, struct tNum src2) {
       (src1.type == T_FLOAT ||
        src2.type == T_FLOAT ||
        op != '+' && op != '-')) {
-    tNumMatchType(&src1, &src2);
+    num_matchtype(&src1, &src2);
   }
   // Do my teng...
   switch (op) {
@@ -98,14 +98,14 @@ struct tNum tNumOpIn(struct tNum src1, char op, struct tNum src2) {
 ////////////////////////////////////////////////////////////////////////////////
 // Prefix operators
 ////////////////////////////////////////////////////////////////////////////////
-struct tNum tNumOpPre(char op, struct tNum src) {
+struct num num_prefix(char op, struct num src) {
   switch (op) {
     case '~':
       if (src.type == T_FLOAT) src.val.f = -src.val.f;
       else                     src.val.s = -src.val.s;
       break;
     default:
-      tNum2type(&src, T_FLOAT);
+      num_2type(&src, T_FLOAT);
       if (src.val.f < 0.0 && (op == 'l' || op == 'r')) {
         fprintf(stderr, "n.a. for negative\n");
         return src;
@@ -129,7 +129,7 @@ struct tNum tNumOpPre(char op, struct tNum src) {
 ////////////////////////////////////////////////////////////////////////////////
 // Parse
 ////////////////////////////////////////////////////////////////////////////////
-int tNumParse(struct tNum *this, char *yytext) {
+int num_parse(struct num *this, char *yytext) {
   int success = 0;
   CommaStrip(yytext);
   // attempt actual type and base
@@ -151,8 +151,8 @@ int tNumParse(struct tNum *this, char *yytext) {
   }
   // attampt float if failed
   if (!success && this->type != T_FLOAT && strchr(yytext, '.')) {
-    tNum2type(this, T_FLOAT);
-    success = tNumParse(this, yytext);
+    num_2type(this, T_FLOAT);
+    success = num_parse(this, yytext);
   }
   if (!success) fprintf(stderr, "unable to parse number\n");
   return success;
@@ -161,7 +161,7 @@ int tNumParse(struct tNum *this, char *yytext) {
 ////////////////////////////////////////////////////////////////////////////////
 // Print
 ////////////////////////////////////////////////////////////////////////////////
-void tNumPrint(struct tNum* this, int num, int prompt, char base) {
+void num_print(struct num* this, int num, int prompt, char base) {
   // Print formats with optional prompt
   char type;
   int index = 0;
@@ -204,12 +204,12 @@ void tNumPrint(struct tNum* this, int num, int prompt, char base) {
 ////////////////////////////////////////////////////////////////////////////////
 // Set, or, print in, base
 ////////////////////////////////////////////////////////////////////////////////
-int tNumBase(struct tNum *this, char base)
+int num_base(struct num *this, char base)
 {
   if (base != 2 && base != 8 && base != 10 && base != 16)
     return 0;
   if (this->type == T_FLOAT) {
-    tNumPrint(this, 1, 0, base);
+    num_print(this, 1, 0, base);
     return 0;
   } else {
     this->base = base;
@@ -246,13 +246,13 @@ static void CommaGroup(char *binary, unsigned int val, int ieee754)
 ////////////////////////////////////////////////////////////////////////////////
 // Power operator
 ////////////////////////////////////////////////////////////////////////////////
-static struct tNum tNumPower(struct tNum src1, struct tNum src2) {
+static struct num tNumPower(struct num src1, struct num src2) {
   /* Convert to float if any operand float, or power negative */
   if (src2.type == T_SIGNED && src2.val.s < 0) {
-    tNum2type(&src2, T_FLOAT);
+    num_2type(&src2, T_FLOAT);
   }
   if (src1.type == T_FLOAT || src2.type == T_FLOAT) {
-    tNumMatchType(&src1, &src2);
+    num_matchtype(&src1, &src2);
     src1.val.f = pow(src1.val.f, src2.val.f);
     return src1;
   }
@@ -261,7 +261,7 @@ static struct tNum tNumPower(struct tNum src1, struct tNum src2) {
     src1.val.s = 1;
     return src1;
   }
-  struct tNum tmp = src1;
+  struct num tmp = src1;
   unsigned int i;
   for (i = 1; i < src2.val.n; ++i) {
     if (tmp.type == T_SIGNED)

@@ -7,7 +7,7 @@
 #include "num.h"
 
 /* Output of the last statement stored here */
-extern struct tNum output;
+extern struct num output;
 
 /* Read from, pop, push to the top of, and examine the stack*/
 void output_get(void);

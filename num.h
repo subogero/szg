@@ -1,8 +1,8 @@
-/*****************************************************************************
+/******************************************************************************
 * (c) SZABO Gergely, 2009
 * Free software, distributed under the WTFPL license
 * There is absolutely no warranty.
-*****************************************************************************/
+******************************************************************************/
 #ifndef __tNum
 #define __tNum
 
@@ -12,23 +12,26 @@
 
 #define BASE_NA 0
 
-struct tNum {
-  union {
-    unsigned int n;
-    int          s;
-    float        f;
-  } val;
-  char type;
-  char base;
+struct num {
+	union {
+		unsigned int n;
+		int          s;
+		float        f;
+	} val;
+	char type;
+	char base;
 };
 
-void tNum2type       (struct tNum *this, char type);
-void tNumMatchType   (struct tNum *this, struct tNum *that);
-struct tNum tNumOpIn (struct tNum src1, char op, struct tNum src2);
-struct tNum tNumOpPre(char op, struct tNum src);
-int  tNumParse       (struct tNum *this, char *yytext);
-void tNumPrint       (struct tNum *this, int num, int prompt, char base);
-int tNumBase         (struct tNum *this, char base);
-#define tNumDisplay(this,num,prompt) tNumPrint(this,num,prompt,BASE_NA)
+void num_2type(struct num *this, char type);
+void num_matchtype(struct num *this, struct num *that);
+
+struct num num_infix(struct num src1, char op, struct num src2);
+struct num num_prefix(char op, struct num src);
+
+int num_parse(struct num *this, char *yytext);
+void num_print(struct num *this, int num, int prompt, char base);
+#define num_display(this,num,prompt) num_print(this,num,prompt,BASE_NA)
+
+int num_base(struct num *this, char base);
 
 #endif

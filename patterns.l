@@ -63,8 +63,8 @@
 }
 [0-9a-f.,]+	{
 	print_on();
-	tNumParse(&output, yytext);
-	yylval.Num = output;
+	num_parse(&output, yytext);
+	yylval.n = output;
 	return NUMBER;
 }
 .	{

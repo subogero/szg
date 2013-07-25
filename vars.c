@@ -14,7 +14,7 @@
 struct tList {
   struct tList *next;
   char *key;
-  struct tNum num;
+  struct num n;
   int defined;
 };
 
@@ -35,11 +35,11 @@ char *vars_alloc(char *key)
 }
 
 // Set or allocate variable
-void vars_set(char *key, struct tNum *num)
+void vars_set(char *key, struct num *n)
 {
   struct tList *this = vars_lookup(key, 1);
   if (this) {
-    this->num = *num;
+    this->n = *n;
     this->defined = 1;
   }
   else {
@@ -47,12 +47,12 @@ void vars_set(char *key, struct tNum *num)
   }  
 }
 
-// Get variable, num written if found in table, otherwise return 1
-int  vars_get(char *key, struct tNum *num)
+// Get variable, n written if found in table, otherwise return 1
+int  vars_get(char *key, struct num *n)
 {
   struct tList *this = vars_lookup(key, 0);
   if (this && this->defined) {
-    *num = this->num;
+    *n = this->n;
     return 0;
   }
   else {
@@ -136,7 +136,7 @@ void vars_dbg(void)
     while (this) {
       if (this->defined) {
         printf("%s = ", this->key);
-        tNumPrint(&this->num, 1, 0, BASE_NA);
+        num_print(&this->n, 1, 0, BASE_NA);
       }
       this = this->next;
     }

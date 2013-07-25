@@ -7,16 +7,16 @@
 #include "output.h"
 
 /* Output of the last statement */
-struct tNum output = { { 0 }, T_SIGNED, 10 };
+struct num output = { { 0 }, T_SIGNED, 10 };
 /* Linked list element with data and link */
 struct stack_t {
-	struct tNum data;
+	struct num data;
 	struct stack_t *link;
 };
 /* Pointer to top of stack */
 static struct stack_t *stack_top = NULL;
 /* Default data store used if dynamic memory allocation fails */
-static struct tNum default_data = { { 0 }, T_SIGNED, 10 };
+static struct num default_data = { { 0 }, T_SIGNED, 10 };
 
 /* Get top of undo stack into output */
 void output_get(void)
@@ -55,7 +55,7 @@ void output_show(void)
 {
 	struct stack_t *this = stack_top;
 	while (this != NULL) {
-		tNumDisplay(&this->data, 1, 0);
+		num_display(&this->data, 1, 0);
 		this = this->link;
 	}
 }

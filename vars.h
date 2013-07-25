@@ -9,8 +9,8 @@
 #include "num.h"
 
 char *vars_alloc(char *key);
-void vars_set(char *key, struct tNum *num);
-int  vars_get(char *key, struct tNum *num);
+void vars_set(char *key, struct num *num);
+int  vars_get(char *key, struct num *num);
 void vars_dbg(void);
 
 #endif
