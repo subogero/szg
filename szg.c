@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
 
   // Parse arguments
   if (argc >= 2) {
-    arg1Eval(argv[1]); // catch and print help/version and exit
+    arg1_eval(argv[1]); // catch and print help/version and exit
     if (*(argv[1]) == '-') {
       if (argc >= 3) filename = argv[2];
                      command  = argv[1];
