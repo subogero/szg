@@ -64,7 +64,7 @@ MANDIR := $(DESTDIR)/usr/share/man/man1
 BINDIR := $(DESTDIR)/usr/bin
 
 ####### Rules ########
-.PHONY: all num install uninstall clean commit tarball tag release deb
+.PHONY: all num vars install uninstall clean commit tarball tag release deb
 
 # Compile targets
 all: $(BIN)/$(TARGET)
@@ -86,7 +86,7 @@ num:
 
 # vars test-suite
 vars:
-	@$(CC) $(CFLAGS) -o vars vars.c num.c varsTest.c
+	@$(CC) $(CFLAGS) -lm -o vars vars.c num.c vars_test.c
 
 # c/h from y (yacc)
 %.c: %.y
