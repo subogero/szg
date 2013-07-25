@@ -8,9 +8,9 @@
 %}
 
 %union {
-  char u8;
-  char *id;
-  struct tNum Num;
+	char u8;
+	char *id;
+	struct tNum Num;
 }
 
 %{
@@ -71,6 +71,6 @@ expr :                       { dbg("non");  output_get(); $$ = output; }
 
 static void dbg(char* term) {
 #ifdef DEBUG
-  printf("yacc %s\n", term);
+	printf("yacc %s\n", term);
 #endif
 }
