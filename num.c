@@ -215,7 +215,7 @@ void num_print(struct num *this, int num, int prompt, char base) {
 		}
 	}
 	if (prompt)
-		printf(prompts[index]);
+		fprintf(stderr, prompts[index]);
 }
 
 /* Set, or, print in, base */
