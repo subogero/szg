@@ -64,7 +64,7 @@ MANDIR := $(DESTDIR)/usr/share/man/man1
 BINDIR := $(DESTDIR)/usr/bin
 
 ####### Rules ########
-.PHONY: all tnum install uninstall clean commit tarball tag release deb
+.PHONY: all num install uninstall clean commit tarball tag release deb
 
 # Compile targets
 all: $(BIN)/$(TARGET)
