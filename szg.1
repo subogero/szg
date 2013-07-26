@@ -71,8 +71,6 @@ are:
 .br
 \- ability to go on from previous result with incomplete expression
 .br
-\- a fair amount of memory registers with intuitive use
-.br
 \- unlimited amount of user variables
 .PP
 .BR szg (1)
@@ -113,7 +111,7 @@ Math functions:
 .B @s @c @a @l @e @r
 = sin cos atan log exp sqrt
 .PP
-Incomplete expressions are where a number is missing from
+Incomplete expressions are where an operand is missing from
 between operators. The last result
 .B _
 is used automatically instead.
@@ -148,7 +146,8 @@ Floating point numbers are displayed in scientific format only if necessary.
 Switching to floating-point implies switching to decimal I/O mode.
 Once in float mode, the commands
 .B B O X
-(binary, octal, hexadecimal) set binary output-mode only, input mode remains decimal.
+(binary, octal, hexadecimal) show you the number once in the respective format,
+then return to decimal IO mode.
 .PP
 Switching back from floating-point mode to either signed or unsigned integer mode
 works with the commands
@@ -197,6 +196,7 @@ IO, nothing else.
 .PP
 By default, a prompt is indicating IO and calculation mode,
 if input is coming from a terminal (no pipe, no input file).
+The prompt is printed to stderr.
 .br
 Uppercase prompts B O D X indicate unsinged mode.
 .br
@@ -279,8 +279,5 @@ in the Subject field.
 .br
 Issues, milestones on
 .B http://github.com/subogero/szg
-.br
-Or visit
-.B http://subogero.dyndns.org/git/szg.html
 .br
 Patches welcome!

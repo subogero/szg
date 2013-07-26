@@ -41,8 +41,8 @@ Floating point support:
 
 Commands:
   Single upper-case letters, same as the command line options, except V.
-  V print all user-defined vairables with values.
-  Alternative forms: (a-f backslash plus) lowercase letter.
+  V prints all user-defined vairables with values.
+  Alternative forms: G .. Z, \a .. \z
   Use command Q or ^D (EOF on Unix) or ^C (interrupt) to exit.
 
 See man szg for more details.

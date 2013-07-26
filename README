@@ -4,8 +4,6 @@ Features
 --------
 32-bit integer or floating-point arithmetic
 Missing operands or _ anywhere are replaced with the last result:
-  '*'  takes the square of the last result
-  '-2' substracts 2 from the last result, use ~2 for unary minus
 Input:
   szg           - expressions, variable assignments and commands on stdin
   szg <FILE>    - from file specified on command line
@@ -37,6 +35,10 @@ d /5.0    # floating point division upon request, shown by prompt f
 f @r      # square root, missing operand, means @r(4.8)
 2.19089
 f B       # look at the bitwise storage of the float number in memory
-01000000,00001100,00110111,10001100
+0,10000000,00011000011011110001100
 2.19089
 f $foo=   # store in variable $foo
+2.19089
+f 1/      # reciprocal is easy even without a special function
+0.456435
+f
