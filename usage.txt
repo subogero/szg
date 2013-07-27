@@ -37,13 +37,12 @@ Floating point support:
   with command F, or implicitly enter a float-format number (e.g. 2.3)
   as part of an expression. A division does NOT switch to float mode.
   Operator ^ (power) switches to float if the 2nd operand is negative.
-  Swithing to float activates decimal I/O mode implicitly.
+  Switching to float activates decimal I/O mode implicitly.
 
 Commands:
   Single upper-case letters, same as the command line options, except V.
   V prints all user-defined vairables with values.
-  Alternative forms: G .. Z, \a .. \z
+  Alternative forms: G .. Z, \\a .. \\z
   Use command Q or ^D (EOF on Unix) or ^C (interrupt) to exit.
 
 See man szg for more details.
-Bug reports to <szg@subogero.com>, include 'szg' in Subject field.
