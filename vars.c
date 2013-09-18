@@ -25,6 +25,7 @@ struct list {
 static unsigned char hashfunc(char *key);
 struct list *buckets[BUCKETS];
 static struct list *vars_lookup(char *key, int append);
+static int vars_sort(const void *a, const void *b);
 
 /* Allocate a variable */
 char *vars_alloc(char *key)
@@ -135,18 +136,46 @@ static unsigned char hashfunc(char *key)
 	hash = ((hash >> VARS_HASHSIZE) ^ hash) & (BUCKETS - 1);
 }
 
-/* Print keys for each hash-bucket per line */
+/* Print all variables in alphabetic order */
 void vars_dbg(void)
 {
+	struct list **vars = NULL; /* Dynamic array of struct list pointers */
+	int n_vars = 0;
 	int i;
 	for (i = 0; i < BUCKETS; ++i) {
 		struct list *this = buckets[i];
-		while (this) {
-			if (this->defined) {
-				printf("%s = ", this->key);
-				num_print(&this->n, 1, 0, BASE_NA);
-			}
+		while (this != NULL) {
+			if (!this->defined)
+				goto this_next;
+			n_vars++;
+			vars = vars == NULL
+			? malloc(n_vars * sizeof(struct list*))
+			: realloc(vars, n_vars * sizeof(struct list*));
+			vars[n_vars - 1] = this;
+		this_next:
 			this = this->next;
 		}
 	}
+	/* Alphabetic sort */
+	qsort(vars, n_vars, sizeof(struct list*), vars_sort);
+	for (i = 0; i < n_vars; ++i) {
+		struct list *this = vars[i];
+		printf("%s = ", this->key);
+		num_print(&this->n, 1, 0, BASE_NA);
+	}
+	if (vars != NULL)
+		free(vars);
+}
+
+/* Alphabetic sort of struct list pointers based on key */
+static int vars_sort(const void *a, const void *b)
+{
+	/* Inputs are actually pointers to struct list pointers */
+	struct list *const *aa = a;
+	struct list *const *bb = b;
+	/* Get to the struct list pointers */
+	struct list *aaa = *aa;
+	struct list *bbb = *bb;
+	/* Compare the struct list key strings */
+	return strcmp(aaa->key, bbb->key);
 }
