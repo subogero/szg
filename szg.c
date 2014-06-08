@@ -12,7 +12,7 @@
 #include "grammar.h"
 #include "patterns.h"
 #include "vars.h"
-extern void yyparse(void); /* interpreter main loop */
+extern int yyparse(void); /* interpreter main loop */
 
 FILE *yyin;
 
