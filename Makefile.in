@@ -71,6 +71,7 @@ all: $(BIN)/$(TARGET)
 $(BIN)/$(TARGET): $(CSRC) $(HSRC) Makefile usage.txt version.txt
 	@if [ ! -d $(BIN) ]; then mkdir $(BIN); fi
 	$(CC) $(CFLAGS) -o $(BIN)/$(TARGET) $(CSRC) $(LIBS)
+	pakol || true
 win: $(WIN)/$(WARGET)
 $(WIN)/$(WARGET): $(CSRC) $(HSRC) Makefile usage.txt version.txt
 	@if [ ! -d $(WIN) ]; then mkdir $(WIN); fi

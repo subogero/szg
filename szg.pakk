@@ -1,0 +1,3935 @@
+#!/bin/sh
+mkdir szg
+cd szg
+cat <<"PAKK" >>.gitignore
+/.bin
+/.win
+/.w64
+/.release
+szg*.tar.gz
+grammar.c
+grammar.h
+patterns.c
+patterns.h
+num
+num.exe
+vars
+vars.exe
+Release.txt
+usage.h
+version.h
+Makefile
+PAKK
+chmod 644 .gitignore
+cat <<"PAKK" >>COPYING
+           DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+                   Version 2, December 2004
+
+Copyright (C) 2004 Sam Hocevar <sam@hocevar.net>
+
+Everyone is permitted to copy and distribute verbatim or modified
+copies of this license document, and changing it is allowed as long
+as the name is changed.
+
+           DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+  TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+
+ 0. You just DO WHAT THE FUCK YOU WANT TO.
+PAKK
+chmod 644 COPYING
+cat <<"PAKK" >>INSTALL
+Compilation Instructions
+------------------------
+Source tarball at http://linux.subogero.com/deb/
+It can be compiled and installed on Linux or Windows/Cygwin.
+Packages needed: gcc, make, flex, bison, mingw32 (for native Win binaries only)
+On Windows, it runs both in Cygwin and Windows command line windows.
+$ ./configure
+$ make
+# make install # installs to /usr/bin (and C:\WINDOWS on Cygwin)
+
+Installation of Windows Binaries
+--------------------------------
+Zip files at http://linux.subogero.com/deb/ contain compiled Windows binaries.
+Download and extract in a new directory.
+Open a Cygwin-terminal window there and type “make install”.
+Or simply copy .win/szg.exe (Win32) or .w64/szg.exe (Win x64) to C:\WINDOWS
+if you don't have Cygwin.
+
+Debian packages
+---------------
+Add the lines below to /etc/apt/sources.list to install szg via apt-get:
+deb http://linux.subogero.com/deb/ /
+deb-src http://linux.subogero.com/deb/ /
+
+Add my PGP public-key to verify package authenticity:
+# curl linux.subogero.com/deb/subogero.asc | apt-key add -
+
+Finally, install szg:
+# apt-get update
+# apt-get install szg
+
+Note: rpm packages are available at the same location too.
+PAKK
+chmod 644 INSTALL
+cat <<"PAKK" >>Makefile.in
+##############################################################################
+# (c) SZABO Gergely, 2009
+# Free software, distributed under the WTFPL license
+# There is absolutely no warranty.
+##############################################################################
+define DESCR
+Description: Fast command line calculator
+ Command line calculator with a very fast workflow,
+ unsigned/signed int float modes, dec hex oct bin formats
+ user defined variables, comments and unlimited undo.
+endef
+export DESCR
+
+####### Macros #######
+SHELL := /bin/bash
+
+# Target and sources
+BIN := .bin
+WIN := .win
+W64 := .w64
+REL := .release
+
+# Windows/Unix targets compiled on Windows/Unix
+WARGET := szg.exe
+TARGET :=
+
+# Defines
+ifneq "$(VARS)" "no"
+CDEFS  := -DVARS
+endif
+
+ifdef VARS_HASH
+CDEFS  += -DVARS_HASH=$(VARS_HASH)
+endif
+
+ifdef VARS_HASHSIZE
+CDEFS  += -DVARS_HASHSIZE=$(VARS_HASHSIZE)
+endif
+
+# Unix targets compiled on both Windows/Unix
+CC     := gcc
+CFLAGS := -g -Wno-format -Wmissing-prototypes $(CDEFS)
+LIBS   := -lm
+
+# Windows targets compiled on Windows/Unix
+WC :=
+WLIBS :=
+W64C :=
+W64LIBS :=
+
+# Sources
+CSRC := szg.c grammar.c output.c num.c patterns.c arg1.c
+HSRC := szg.h output.h num.h arg1.h version.h usage.h
+
+ifneq "$(VARS)" "no"
+CSRC   += vars.c
+HSRC   += vars.h
+endif
+
+TMPF := patterns.c patterns.h grammar.c grammar.h num usage.h version.h *~ *.tar.gz
+
+MANPAGE:= szg.1
+MANDIR := $(DESTDIR)/usr/share/man/man1
+BINDIR := $(DESTDIR)/usr/bin
+
+####### Rules ########
+.PHONY: all num vars install uninstall clean commit tarball tag release deb
+
+# Compile targets
+all: $(BIN)/$(TARGET)
+$(BIN)/$(TARGET): $(CSRC) $(HSRC) Makefile usage.txt version.txt
+	@if [ ! -d $(BIN) ]; then mkdir $(BIN); fi
+	$(CC) $(CFLAGS) -o $(BIN)/$(TARGET) $(CSRC) $(LIBS)
+win: $(WIN)/$(WARGET)
+$(WIN)/$(WARGET): $(CSRC) $(HSRC) Makefile usage.txt version.txt
+	@if [ ! -d $(WIN) ]; then mkdir $(WIN); fi
+	$(WC) $(CFLAGS) -o $(WIN)/$(WARGET) $(WLIBS) $(CSRC) $(LIBS);
+w64: $(W64)/$(WARGET)
+$(W64)/$(WARGET): $(CSRC) $(HSRC) Makefile usage.txt version.txt
+	@if [ ! -d $(W64) ]; then mkdir $(W64); fi
+	$(W64C) $(CFLAGS) -o $(W64)/$(WARGET) $(W64LIBS) $(CSRC) $(LIBS);
+
+# num test-suite
+num:
+	@$(CC) $(CFLAGS) -lm -o num num.c num_test.c
+
+# vars test-suite
+vars:
+	@$(CC) $(CFLAGS) -lm -o vars vars.c num.c vars_test.c
+
+# c/h from y (yacc)
+%.c: %.y
+	bison -d -o $@ $<
+
+# c from l (lex)
+%.c: %.l
+	flex --header-file=patterns.h -o $@ $<
+
+# Create headers with C string initializers from text files
+%.h: %.txt
+	@sed -e 's/[ \t]*$$//g' -e 's/^/"/g' -e 's/$$/\\n",/g' <$< >$@
+
+# Install to c/cygdrive/WINDOWS /usr/bin
+install:
+	@mkdir -p $(BINDIR)
+	@cp -f $(BIN)/$(TARGET) $(BINDIR)
+	@mkdir -p $(MANDIR)
+	@cp -f $(MANPAGE) $(MANDIR)
+	@gzip --best $(MANDIR)/$(MANPAGE)
+	@cp -f $(WIN)/$(WARGET) /cygdrive/c/WINDOWS
+	@cp -f $(W64)/$(WARGET) /cygdrive/c/WINDOWS
+
+# Uninstall from c/cygdrive/WINDOWS /usr/bin
+uninstall:
+	@rm -f $(BINDIR)/$(TARGET)
+	@rm -f $(MANDIR)/$(MANPAGE).gz
+	@rm -f /cygdrive/c/WINDOWS/$(WARGET)
+
+# Remove all generated files
+clean:
+	@rm -rf $(BIN) $(WIN) $(W64) $(TMPF)
+
+# Source tarball and zip file with Win32 executable
+tarball: clean
+	export TAG=`sed -rn 's/^szg (.+)$$/\1/p' version.txt`; \
+	$(MAKE) balls
+balls:
+	mkdir -p $(REL)/szg-$(TAG); \
+	cp -rt $(REL)/szg-$(TAG) *; \
+	cd $(REL); \
+	tar -czf szg_$(TAG).tar.gz szg-$(TAG); \
+	[ -f *zip ] && rm *zip; \
+	zip -r   szg_$(TAG).zip    szg-$(TAG); \
+	cd ..; \
+	$(MAKE) $(WIN)/$(WARGET); \
+	zip $(REL)/szg_$(TAG).zip $(WIN)/$(WARGET)
+	$(MAKE) $(W64)/$(WARGET); \
+	zip $(REL)/szg_$(TAG).zip $(W64)/$(WARGET)
+
+# Commit to git repository
+commit:
+	@if [ "`git diff --no-ext-diff HEAD`" ]; \
+	  then git commit -a;     \
+	fi
+
+# Create a tagged commit for release
+tag: commit
+	@echo 'Chose old tag to follow: '; \
+	select OLD in `git tag`; do break; done; \
+	export TAG; \
+	read -p 'Please Enter new tag name: ' TAG; \
+	sed -r -e "s/^szg.*$$/szg $$TAG/" \
+	       -e 's/([0-9]{4}-)[0-9]*/\1'`date +%Y`/ \
+	       -i version.txt || exit 1; \
+	git commit -a -m "version $$TAG"; \
+	echo Adding git tag $$TAG; \
+	echo "szg ($$TAG)" > changelog; \
+	if [ -n "$$OLD" ]; then \
+	  git log --pretty=format:"  * %h %an %s" $$OLD.. >> changelog; \
+	  echo >> changelog; \
+	else \
+	  echo '  * Initial release' >> changelog; \
+	fi; \
+	echo " -- `git config user.name` <`git config user.email`>  `date -R`" >> changelog; \
+	$$EDITOR changelog; \
+	git tag -a -F changelog $$TAG HEAD; \
+	rm changelog
+
+# Push to all git remotes
+push:
+	@REMOTES=`git remote -v | sed -rn 's/^(.+)\t[^ ]+ \(push\)$$/\1/p'`; \
+	for REMOTE in $$REMOTES; do \
+	  git push --tags $$REMOTE; \
+	  git push --all  $$REMOTE; \
+	done
+
+# Source and binary Debian packages
+deb: tarball $(BIN)/$(TARGET)
+	export TAG=`sed -rn 's/^szg (.+)$$/\1/p' version.txt`; \
+	export DEB=$(REL)/szg-$${TAG}/debian; \
+	$(MAKE) debs
+debs:
+	-rm $(REL)/*.deb
+	cp -f $(REL)/szg_$(TAG).tar.gz $(REL)/szg_$(TAG).orig.tar.gz 
+	mkdir -p $(DEB)
+	echo 'Source: szg'                                            >$(DEB)/control
+	echo 'Section: math'                                         >>$(DEB)/control
+	echo 'Priority: optional'                                    >>$(DEB)/control
+	sed -nr 's/^C.+ [-0-9]+ (.+)$$/Maintainer: \1/p' version.txt >>$(DEB)/control
+	echo 'Build-Depends: debhelper, flex, bison'                 >>$(DEB)/control
+	echo 'Standards-version: 3.8.4'                              >>$(DEB)/control
+	echo                                                         >>$(DEB)/control
+	echo 'Package: szg'                                          >>$(DEB)/control
+	echo 'Architecture: any'                                     >>$(DEB)/control
+	echo 'Depends: $${shlibs:Depends}, $${misc:Depends}'         >>$(DEB)/control
+	echo "$$DESCR"                                               >>$(DEB)/control
+	grep Copyright version.txt                    >$(DEB)/copyright
+	echo 'License: WTFPL'                        >>$(DEB)/copyright
+	echo ' See /usr/share/common-licenses/WTFPL' >>$(DEB)/copyright
+	echo 7 > $(DEB)/compat
+	for i in `git tag | sort -rg`; do git show $$i | sed -n '/^szg/,/^ --/p'; done \
+	| sed -r 's/^szg \((.+)\)$$/szg (\1-1) UNRELEASED; urgency=low/' \
+	| sed -r 's/^(.{,79}).*/\1/' \
+	> $(DEB)/changelog
+	$(EDITOR) $(DEB)/changelog
+	echo '#!/usr/bin/make -f' > $(DEB)/rules
+	echo '%:'                >> $(DEB)/rules
+	echo '	dh $$@'          >> $(DEB)/rules
+	chmod 755 $(DEB)/rules
+	mkdir -p $(DEB)/source
+	echo '3.0 (quilt)' > $(DEB)/source/format
+	@cd $(REL)/szg-$(TAG) && \
+	echo && echo List of PGP keys for signing package: && \
+	gpg -K | grep uid && \
+	read -ep 'Enter key ID (part of name or alias): ' KEYID; \
+	if [ "$$KEYID" ]; then \
+	  dpkg-buildpackage -k$$KEYID; \
+	else \
+	  dpkg-buildpackage -us -uc; \
+	fi
+	lintian $(REL)/*.deb
+	fakeroot alien -kr $(REL)/*.deb; mv *.rpm $(REL)
+
+# Release
+release: tag deb push
+PAKK
+chmod 644 Makefile.in
+cat <<"PAKK" >>README
+szg is a command line calculator with an extremely fast and intuitive workflow.
+
+Features
+--------
+32-bit integer or floating-point arithmetic
+Missing operands or _ anywhere are replaced with the last result:
+Input:
+  szg           - expressions, variable assignments and commands on stdin
+  szg <FILE>    - from file specified on command line
+  szg -e <expr> - expression directly from the command line
+Comma-grouping of input allowed
+Unlimited undo
+Operators ()~ ^ */% +- &| =   ATTENTION: unary minus is ~ (tilde)
+Math functions @s @c @a @l @e @r = sin cos atan log exp sqrt
+User defined variables like $foo
+Decimal, binary, octal or hexadecimal format (commands D, B, O, X)
+Unsigned integer, signed integer and float modes (commands N, S, F)
+Prompt shows unsigned/integer/float mode and bin/oct/dec/hex format (DdBbOoXxf)
+Floating-point mode never upon division, only upon F or float literal
+Combination of expressions/commands on same line
+Comments starting with #
+
+Examples
+--------
+d XffffD  # Prompt d: signed int mode, decimal format. Convert hex to decimal
+65535
+d 4+3     # Addition
+7
+d *       # Both operands missing, means 7*7
+49
+d /2      # integer division, result remains integer
+24
+d /5.0    # floating point division upon request, shown by prompt f
+4.8
+f @r      # square root, missing operand, means @r(4.8)
+2.19089
+f B       # look at the bitwise storage of the float number in memory
+0,10000000,00011000011011110001100
+2.19089
+f $foo=   # store in variable $foo
+2.19089
+f 1/      # reciprocal is easy even without a special function
+0.456435
+f
+PAKK
+chmod 644 README
+cat <<"PAKK" >>Test
+#!/usr/bin/szg
+# Test script for szg.
+# Invoke: "szg Test" or simply "./Test"
+# It shall produce the following output:
+# 42
+# 42
+# 42
+
+# 42 hex
+11*3*2 X
+
+# 42 oct
+ f*2+4 O # Leading space
+
+# 42 dec
+	52 D # Leading tab
+
+	# Leading tab and comment
+PAKK
+chmod 755 Test
+cat <<"PAKK" >>arg1.c
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+*******************************************************************************/
+#include "arg1.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+/* Perform Usage/Version display if 1st arg is -h/-V */
+void arg1_eval(const char* arg1) {
+	if (strstr(arg1, "-h") || strstr(arg1, "--help")) {
+		usage();
+		exit(0);
+	}
+	if (strstr(arg1, "-V") || strstr(arg1, "--version")) {
+		version();
+		exit(0);
+	}
+}
+
+/* Display usage when called with -h */
+void usage(void) {
+	int i;
+	static const char* lines[] = {
+		#include "usage.h"
+	};
+	for (i = 0; i < sizeof lines / sizeof(char*); i++)
+		printf(lines[i]);
+}
+
+
+/* Display version info when called with -v */
+void version(void) {
+	int i;
+	static const char* lines[] = {
+		#include "version.h"
+	};
+	for (i = 0; i < sizeof lines / sizeof(char*); i++)
+		printf(lines[i]);
+}
+PAKK
+chmod 644 arg1.c
+cat <<"PAKK" >>arg1.h
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+/*
+ * Utility to display Usage/Version text and exit if arg1 is "-h"/"-V"
+ * Text shall be defined as string initializer-lists in usage.h and version.h
+ * Generate headers automatically from plain text files with a make rule:
+ * %.h: %.txt
+ *	sed -e 's/[ \t]*$$//g' -e 's/^/"/g' -e 's/$$/\\n",/g' <$< >$@
+ */
+
+#ifndef __arg1
+#define __arg1
+void arg1_eval(const char* arg1);
+void usage(void);
+void version(void);
+#endif
+PAKK
+chmod 644 arg1.h
+cat <<"PAKK" >>configure
+#!/bin/sh
+##############################################################################
+# (c) SZABO Gergely, 2012
+# Free software, distributed under the WTFPL license
+# There is absolutely no warranty.
+##############################################################################
+prefix_w32='i686-w64-mingw32 i686-pc-mingw32 i586-mingw32msvc'
+prefix_w64='x86_64-w64-mingw32 amd64-mingw32msvc'
+
+error() {
+  echo Error "$@"
+  exit 1
+}
+
+# check gcc flex bison
+echo --- Checking gcc ---
+which gcc || error
+
+echo --- Checking flex ---
+which flex || error
+
+echo --- Checking bison ---
+which bison || error
+
+# Which OS?
+echo --- Checking OS ---
+if env | egrep "PROCESSOR_IDENTIFIER=Intel64"; then
+  OS=w64
+elif env | egrep "PROCESSOR_IDENTIFIER=x86"; then
+  OS=w32
+elif uname -a | egrep "x86_64 GNU/Linux"; then
+  OS=l64
+elif uname -a | egrep "i.86 GNU/Linux"; then
+  OS=l32
+else
+  error
+fi
+
+# TARGET w/ or w/o .exe
+if [ $OS = 'l32' -o $OS = 'l64' ]; then
+  target=szg
+else
+  target=szg.exe
+fi
+echo TARGET = $target
+
+# WC WLIBS W64C W64LIBS
+echo --- Checking Win64 cross compilers ---
+for w64c in $prefix_w64; do
+  if which $w64c-gcc; then
+    w64libs="-L/usr/$w64c/lib -I/usr/$w64c/include"
+    break
+  else
+    w64c=''
+  fi
+done
+
+echo --- Checking Win32 cross compilers ---
+for wc in $prefix_w32; do
+  if which $wc-gcc; then
+    wlibs="-L/usr/$wc/lib -I/usr/$wc/include"
+    break
+  else
+    wc=''
+  fi
+done
+
+# Print basic part of Makefile
+echo --- Printing targets ---
+sed -r "s/^(TARGET :=)/& $target/" Makefile.in > Makefile
+[ "$wc" -o "$w64c" ] || sed -r '/^WARGET :=/d' -i Makefile
+
+if [ "$w64c" ]; then
+  echo Printing Windows x64 cross-compiler
+  sed -r -e "s/^W64C :=/& $w64c-gcc/" \
+         -e "s,^W64LIBS :=,& $w64libs," \
+         -i Makefile
+else
+  echo Removing Windows x64 cross-compiler
+  sed "/^W64C :=/,/^W64LIBS :=/d" -i Makefile
+  sed "/^W64 :=/d" -i Makefile
+  sed '/^w64: /,/^\t$(W64C)/d' -i Makefile
+fi
+
+if [ "$wc" ]; then
+  echo Printing Win32 cross-compiler
+  sed -r -e "s/^WC :=/& $wc-gcc/" \
+         -e "s,^WLIBS :=,& $wlibs," \
+         -i Makefile
+else
+  echo Removing Win32 cross-compiler
+  sed "/^WC :=/,/^WLIBS :=/d" -i Makefile
+  sed "/^WIN :=/d" -i Makefile
+  sed '/^win: /,/^\t$(WC)/d' -i Makefile
+fi
+
+echo --- Changing install uninstall rules for Windows ---
+[ $OS = l32 -o $OS = l64 ]   && sed -r '\,rm.+cygdrive,d' -i Makefile
+[ $OS != w64 -o -z "$w64c" ] && sed -r '\,cp.+W64.+cygdrive,d' -i Makefile
+[ $OS != w32 -o -z "$wc" ]   && sed -r '\,cp.+WIN.+cygdrive,d' -i Makefile
+
+# zip
+echo --- Checking zip ---
+which zip || sed -r '/\[ -f \*zip/,/zip.+W64/d' -i Makefile
+[ "$w64c" ] || sed -r '/MAKE.+W64/,/zip.+W64/d' -i Makefile
+[ "$wc" ]   || sed -r '/MAKE.+WIN/,/zip.+WIN/d' -i Makefile
+
+# git
+echo --- Checking git ---
+which git || sed -r '/Commit to git/,$ d' -i Makefile
+
+# deb
+echo --- Checking deb rpm building tools ---
+which dpkg-buildpackage && \
+which lintian           && \
+which alien             || \
+sed '/Debian packages/,$ d' -i Makefile
+PAKK
+chmod 755 configure
+cat <<"PAKK" >>grammar.y
+/*****************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+*****************************************************************************/
+%{
+#include "num.h"
+%}
+
+%union {
+	char u8;
+	char *id;
+	struct num n;
+}
+
+%{
+#include "szg.h"
+#include "output.h"
+#include <stdio.h>
+
+#ifdef VARS
+#include "vars.h"
+#else
+#define vars_set(key,num) fprintf(stderr, "vars support not enabled\n")
+#define vars_get(key,num) vars_set(key,num)
+#endif
+
+//#define DEBUG
+static void dbg(char* term);
+%}
+
+
+%start list
+
+%token <u8>  COMMAND OPADD OPMUL OPPOW OPPRE
+%token <id>  VAR
+%token <n> NUMBER
+
+%type <n> expr
+
+%left OPADD        // additive operators       +-|
+%left OPMUL        // multiplicative operators */%&
+%left OPPOW        // power operator           ^
+%nonassoc OPPRE    // prefix operators         ~
+
+%%
+list : // empty
+     | list stm '\n'         { dbg("ls");   print(); }
+     | list cmd '\n'         { dbg("lc");   print(); }
+     | list cmd stm '\n'     { dbg("lcs");  print(); }
+     | list stm cmd '\n'     { dbg("lsc");  print(); }
+     | list cmd stm cmd '\n' { dbg("lcsc"); print(); }
+     | list error '\n'       { dbg("lerr"); yyerrok; print(); }
+     ;
+cmd  : COMMAND               { dbg("cmd");  commands[$1](); }
+     ;
+stm  : expr                  { dbg("stm");  output = $1; output_push(); }
+     | VAR '=' expr          { dbg("var");  vars_set($1, &$3); }
+     ;
+expr :                       { dbg("non");  output_get(); $$ = output; }
+     | '_'                   { dbg("unl");  output_get(); $$ = output; }
+     | '(' expr ')'          { dbg("par");  $$ = $2; }
+     | expr OPADD expr       { dbg("oad");  $$ = num_infix ($1, $2, $3); }
+     | expr OPMUL expr       { dbg("omu");  $$ = num_infix ($1, $2, $3); }
+     | expr OPPOW expr       { dbg("opo");  $$ = num_infix ($1, $2, $3); }
+     | OPPRE expr            { dbg("opr");  $$ = num_prefix($1, $2); }
+     | VAR                   { dbg("var");  if (vars_get($1,&$$)) $$=output; }
+     | NUMBER                { dbg("num");  $$ = $1; }
+     ;
+%%
+
+static void dbg(char* term) {
+#ifdef DEBUG
+	printf("yacc %s\n", term);
+#endif
+}
+PAKK
+chmod 644 grammar.y
+cat <<"PAKK" >>num.c
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+#include "num.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <math.h>
+
+static void comma_strip(char *yytext);
+static void comma_group(char *binary, unsigned int val, int ieee754);
+static struct num num_power(struct num src1, struct num src2);
+
+/* Value in actual type (can be lvalue) */
+#define VALUE(this) ( (this)->type == T_NATURAL ? (this)->val.n \
+                    : (this)->type == T_SIGNED  ? (this)->val.s \
+                    :                             (this)->val.f )
+
+/* Type Conversion */
+void num_2type(struct num *this, char type) {
+	switch (type) {
+	case T_FLOAT:
+		this->val.f = (float)VALUE(this);
+		this->type = T_FLOAT;
+		this->base = 10;
+		break;
+	case T_SIGNED:
+	case T_NATURAL:
+		if (this->type == T_FLOAT) this->val.s = (int)this->val.f;
+		this->type = type;
+		break;
+	}
+}
+
+void num_matchtype(struct num *this, struct num *that) {
+	if (this->type < that->type)
+		num_2type(this, that->type);
+	else if (that->type < this->type)
+		num_2type(that, this->type);
+}
+
+/* Infix operators */
+struct num num_infix(struct num src1, char op, struct num src2) {
+	/* Division by zero check */
+	if ((op == '/' || op == '%') && !src2.val.n) {
+		fprintf(stderr, "division by zero\n");
+		return src1;
+	}
+	/* Float mod check */
+	if (op == '%' && (src1.type == T_FLOAT || src2.type == T_FLOAT)) {
+		fprintf(stderr, "float modulo\n");
+		return src1;
+	}
+	/* Automatic type match: *|^ never, +- if any float, /%* always */
+	if (op != '&' && op != '|' && op != '^' &&
+	    (src1.type == T_FLOAT || src2.type == T_FLOAT ||
+	     op != '+' && op != '-'))
+		num_matchtype(&src1, &src2);
+	/* Do my teng... */
+	switch (op) {
+	case '&':
+		src1.val.n &= src2.val.n;
+		return src1;
+	case '|':
+		src1.val.n |= src2.val.n;
+		return src1;
+	case '+':
+		if (src1.type == T_FLOAT)
+			src1.val.f += src2.val.f;
+		else
+			src1.val.s += src2.val.s;
+		return src1;
+	case '-':
+		if (src1.type == T_FLOAT)
+			src1.val.f -= src2.val.f;
+		else
+			src1.val.s -= src2.val.s;
+		return src1;
+	case '*':
+		if (src1.type == T_FLOAT)
+			src1.val.f *= src2.val.f;
+		else if (src1.type == T_SIGNED)
+			src1.val.s *= src2.val.s;
+		else
+			src1.val.n *= src2.val.n;
+		return src1;
+	case '/':
+		if (src1.type == T_FLOAT)
+			src1.val.f /= src2.val.f;
+		else if (src1.type == T_SIGNED)
+			src1.val.s /= src2.val.s;
+		else
+			src1.val.n /= src2.val.n;
+		return src1;
+	case '%':
+		if (src1.type == T_SIGNED)
+			src1.val.s %= src2.val.s;
+		else
+			src1.val.n %= src2.val.n;
+		return src1;
+	case '^':
+		return num_power(src1, src2);
+	default:
+		return src1;
+	}
+}
+
+/* Prefix operators */
+struct num num_prefix(char op, struct num src) {
+	switch (op) {
+	case '~':
+		if (src.type == T_FLOAT)
+			src.val.f = -src.val.f;
+		else
+			src.val.s = -src.val.s;
+		break;
+	default:
+		num_2type(&src, T_FLOAT);
+		if (src.val.f < 0.0 && (op == 'l' || op == 'r')) {
+			fprintf(stderr, "n.a. for negative\n");
+			return src;
+		}
+		if (src.val.f == 0.0 && op == 'l') {
+			fprintf(stderr, "n.a. for zero\n");
+			return src;
+		}
+		src.val.f = op == 's' ? sin (src.val.f)
+		          : op == 'c' ? cos (src.val.f)
+		          : op == 'a' ? atan(src.val.f)
+		          : op == 'l' ? log (src.val.f)
+		          : op == 'e' ? exp (src.val.f)
+		          : op == 'r' ? sqrt(src.val.f)
+		          : (fprintf(stderr, "unknown function\n"), src.val.f);
+		break;
+	}
+	return src;
+}
+
+/* Parse */
+int num_parse(struct num *this, char *yytext) {
+	int success = 0;
+	comma_strip(yytext);
+	/* attempt actual type and base */
+	if (this->type != T_FLOAT) {
+		char *p_end;
+		long long num = strtoll(yytext, &p_end, this->base);
+		if (p_end - yytext == strlen(yytext)) {
+			this->val.s = num;
+			success = 1;
+		}
+	} else {
+		char *p_end;
+		float num = strtod(yytext, &p_end);
+		if (p_end - yytext == strlen(yytext)) {
+			this->val.f = num;
+			success = 1;
+		}
+	}
+	/* attampt float if failed */
+	if (!success && this->type != T_FLOAT && strchr(yytext, '.')) {
+		num_2type(this, T_FLOAT);
+		success = num_parse(this, yytext);
+	}
+	if (!success)
+		fprintf(stderr, "unable to parse number\n");
+	return success;
+}
+
+/* Print */
+void num_print(struct num *this, int num, int prompt, char base) {
+	/* Print formats with optional prompt */
+	char type;
+	int index = 0;
+	static const int bases[] = {
+		2,        8,        10,       16
+	};
+	static const char *formats[] = {
+		"%B\n",   "%o\n",   "%u\n",   "%x\n",   /* natural */
+		"%B\n",   "%o\n",   "%d\n",   "%x\n",   /* signed */
+		"%B\n",   "%o\n",   "%g\n",   "%x\n",   /* float */
+	};
+	static const char *prompts[] = {
+		"B ",     "O ",     "D ",     "X ",
+		"b ",     "o ",     "d ",     "x ",
+		"f ",     "f ",     "f ",     "f ",
+	};
+	/* Find format */
+	if (base == BASE_NA) base = this->base;
+	while (bases[index] != base)
+		index++;
+	index += 4 * this->type;
+	type = this->type;
+	if (type == T_FLOAT && base != 10)
+		type = T_SIGNED;
+	/* Special code to print binary format */
+	if (base == 2) {
+		char *postfix = strchr(formats[index], '\n');
+		char binary[40] = "";
+		comma_group(binary, this->val.n, this->type == T_FLOAT);
+		strcat(binary, postfix);
+		printf("%s", binary);
+	} else if (num) {
+		switch (type) {
+		case T_NATURAL:
+			printf(formats[index], this->val.n);
+			break;
+		case T_SIGNED :
+			printf(formats[index], this->val.s);
+			break;
+		case T_FLOAT  :
+			printf(formats[index], this->val.f);
+			break;
+		}
+	}
+	if (prompt)
+		fprintf(stderr, prompts[index]);
+}
+
+/* Set, or, print in, base */
+int num_base(struct num *this, char base)
+{
+	if (base != 2 && base != 8 && base != 10 && base != 16)
+		return 0;
+	if (this->type == T_FLOAT) {
+		num_print(this, 1, 0, base);
+		return 0;
+	} else {
+		this->base = base;
+		return 1;
+	}
+}
+
+/* Comma functions: strip commas from input, comma group binary output */
+static void comma_strip(char *yytext) 
+{
+	char *comma_group;
+	while (comma_group = strchr(yytext, ','))
+		memmove(comma_group, comma_group + 1, strlen(comma_group));
+}
+
+static void comma_group(char *binary, unsigned int val, int ieee754)
+{
+	int bit = 31;
+	while (bit >= 0) {
+		unsigned int mask = 1U << (unsigned int)bit;
+		strcat(binary, val & mask ? "1" : "0");
+		if (bit && (ieee754 ? bit == 31 || bit == 23 : bit % 8 == 0))
+			strcat(binary, ",");
+		bit--;
+	}
+}
+
+/* Power operator */
+static struct num num_power(struct num src1, struct num src2) {
+	/* Convert to float if any operand float, or power negative */
+	if (src2.type == T_SIGNED && src2.val.s < 0)
+		num_2type(&src2, T_FLOAT);
+	if (src1.type == T_FLOAT || src2.type == T_FLOAT) {
+		num_matchtype(&src1, &src2);
+		src1.val.f = pow(src1.val.f, src2.val.f);
+		return src1;
+	}
+	/* Integer power */
+	if (src2.val.n == 0) {
+		src1.val.s = 1;
+		return src1;
+	}
+	struct num tmp = src1;
+	unsigned int i;
+	for (i = 1; i < src2.val.n; ++i) {
+		if (tmp.type == T_SIGNED)
+			src1.val.s *= tmp.val.s;
+		else
+			src1.val.n *= tmp.val.n;
+	}
+	return src1;
+}
+PAKK
+chmod 644 num.c
+cat <<"PAKK" >>num.h
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+#ifndef __tNum
+#define __tNum
+
+#define T_NATURAL 0
+#define T_SIGNED  1
+#define T_FLOAT   2
+
+#define BASE_NA 0
+
+struct num {
+	union {
+		unsigned int n;
+		int          s;
+		float        f;
+	} val;
+	char type;
+	char base;
+};
+
+void num_2type(struct num *this, char type);
+void num_matchtype(struct num *this, struct num *that);
+
+struct num num_infix(struct num src1, char op, struct num src2);
+struct num num_prefix(char op, struct num src);
+
+int num_parse(struct num *this, char *yytext);
+void num_print(struct num *this, int num, int prompt, char base);
+#define num_display(this,num,prompt) num_print(this,num,prompt,BASE_NA)
+
+int num_base(struct num *this, char base);
+
+#endif
+PAKK
+chmod 644 num.h
+cat <<"PAKK" >>num_test.c
+#include "num.h"
+int main(void) {
+  struct num n1, n2;
+
+  n1.val.n = 2700000000U;
+  n1.type = T_NATURAL;
+  n1.base = 16;
+
+  n2.val.f = 30.0;
+  n2.type = T_FLOAT;
+  n2.base = 10;
+
+  num_display(&n1, 1, 0);
+  num_display(&n2, 1, 0);
+
+  n1 = num_infix(n1, '/', n2);
+  num_display(&n1, 1, 0);
+
+  num_print(&n1, 1, 0, 2);
+  num_print(&n2, 1, 0, 2);
+
+  n1 = num_infix(n1, '|', n2);
+  num_print(&n1, 1, 0, 2);
+}
+PAKK
+chmod 644 num_test.c
+cat <<"PAKK" >>output.c
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+#include <stdlib.h>
+#include "output.h"
+
+/* Output of the last statement */
+struct num output = { { 0 }, T_SIGNED, 10 };
+/* Linked list element with data and link */
+struct stack_t {
+	struct num data;
+	struct stack_t *link;
+};
+/* Pointer to top of stack */
+static struct stack_t *stack_top = NULL;
+/* Default data store used if dynamic memory allocation fails */
+static struct num default_data = { { 0 }, T_SIGNED, 10 };
+
+/* Get top of undo stack into output */
+void output_get(void)
+{
+	output = stack_top == NULL ? default_data : stack_top->data;
+}
+
+/* Pop: discard top of undo stack, then get top of stack into output */
+void output_pop(void)
+{
+	if (stack_top != NULL) {
+		struct stack_t *old_top = stack_top;
+		stack_top = old_top->link;
+		free(old_top);
+	}
+	output_get();
+}
+
+/* Push output to top of undo stack */
+void output_push(void)
+{
+	struct stack_t *new_top = malloc(sizeof(struct stack_t));
+	if (new_top != NULL) {
+		new_top->data = output;
+		new_top->link = stack_top;
+		stack_top = new_top;
+	} else {
+		while (stack_top)
+			(void)output_pop();
+		default_data = output;
+	}
+}
+
+/* Show contents of entire undo stack */
+void output_show(void)
+{
+	struct stack_t *this = stack_top;
+	while (this != NULL) {
+		num_display(&this->data, 1, 0);
+		this = this->link;
+	}
+}
+PAKK
+chmod 644 output.c
+cat <<"PAKK" >>output.h
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+/* Undo stack for the outputs of all previous statements  */
+#include "num.h"
+
+/* Output of the last statement stored here */
+extern struct num output;
+
+/* Read from, pop, push to the top of, and examine the stack*/
+void output_get(void);
+void output_pop(void);
+void output_push(void);
+void output_show(void);
+PAKK
+chmod 644 output.h
+cat <<"PAKK" >>patterns.l
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+%option always-interactive
+%{
+#include <stdlib.h>
+#include "output.h"
+#include "grammar.h"
+#include "szg.h"
+%}
+
+%%
+#.*$
+;
+[ \t]
+;
+[A-Z]	{
+	print_on();
+	yylval.u8 = yytext[0] - 'A';
+	return COMMAND;
+}
+\\[a-z]	{
+	print_on();
+	yylval.u8 = yytext[1] - 'a';
+	return COMMAND;
+}
+[g-z]	{
+	print_on();
+	yylval.u8 = yytext[0] - 'a';
+	return COMMAND;
+}
+[-+|]	{
+	print_on();
+	yylval.u8 = *yytext;
+	return OPADD;
+}
+[*/%&]	{
+	print_on();
+	yylval.u8 = *yytext;
+	return OPMUL;
+}
+\^	{
+	print_on();
+	yylval.u8 = *yytext;
+	return OPPOW;
+}
+~	{
+	print_on();
+	yylval.u8 = *yytext;
+	return OPPRE;
+}
+@[a-z]	{
+	print_on();
+	yylval.u8 = yytext[1];
+	return OPPRE;
+}
+\$[a-z0-9_]+	{
+	print_on();
+	yylval.id = vars_alloc(yytext);
+	return VAR;
+}
+[0-9a-f.,]+	{
+	print_on();
+	num_parse(&output, yytext);
+	yylval.n = output;
+	return NUMBER;
+}
+.	{
+	print_on();
+	return *yytext;
+}
+\n	{
+	return *yytext;
+}
+%%
+
+int yywrap(void) {
+	return 1;
+}
+PAKK
+chmod 644 patterns.l
+cat <<"PAKK" >>szg.1
+.TH SZG 1 "Distributed under WTFPL" "(c) SZABO Gergely"
+.SH NAME
+szg \- SZámolóGép (Hungarian for calculator) written by SzG
+.SH SYNOPSIS
+szg [-bodxnsfp] [FILE] | [-h] | [-V]
+.br
+szg -[bodxnsfp]e EXPR
+.SH USAGE
+Options:
+.br
+\-h --help     display usage and exit
+.br
+\-V --version  display version information and exit
+.PP
+Commands:
+.br
+-b start in binary I/O mode
+.br
+-o start in octal I/O mode
+.br
+-d start in decimal I/O mode (default)
+.br
+-x start in hexadecimal I/O mode
+.PP
+-n start in unsigned (natural) calculation mode
+.br
+-s start in signed calculation mode (default)
+.br
+-f start in floating-point calculation mode
+.PP
+-p toggle prompt
+.PP
+-e treat the rest of the command line as expression
+.PP
+FILE input file, stdin used if not specified.
+.PP
+Any combination of commands is allowed, last command wins in case of conflict.
+E.g. szg -xnods starts in signed decimal mode.
+.br
+Unknown options and commands are ignored without a warning.
+.SH BACKGROUND
+.B szg
+is a command line calculator, originally for integer arithmetics, inspired by
+.BR bc (1),
+desktop calculators and microcontroller programming. Micros often lack
+floating-point support, so all calculations are integer-based. During
+debugging, one often wishes to simulate calculations with a desktop/GUI
+calculator, only to find everything going floating-point after the first
+division. That's where
+.BR bc (1)
+comes into the picture. But it has no hexadecimal support and its workflow
+is rather cumbersome. Adding 2 to a previous result cannot be done with
+simply typing
+.BR "+ 2 Enter" .
+And how many times have you mistyped something on a desktop calculator
+wishing to undo the last operation? Or wished to have more than one memory?
+.SH DESCRIPTION
+The main features of
+.BR szg (1)
+are:
+.br
+\- command line interface with previous results visible on the screen
+.br
+\- unlimited undo
+.br
+\- decimal, binary, octal and hexadecimal I/O modes
+.br
+\- signed and unsigned integer calculation modes
+.br
+\- floating point mode only upon user request, never upon division
+.br
+\- ability to go on from previous result with incomplete expression
+.br
+\- unlimited amount of user variables
+.PP
+.BR szg (1)
+takes expressions, assignments and commands on stdin and writes the results
+to stdout or the specified output FILE upon pressing
+.BR Enter .
+.SS EXPRESSIONS
+.BR szg (1)
+expressions are built of
+.br
+.B [0-9a-f.,]+
+numbers (arbitrary coma-grouping allowed)
+.br
+.B $[a-z0-9_]+
+user variables
+.br
+.B _
+last result
+.br
+and operators listed below in descending precedence:
+.br
+.B ()
+\   brackets to override operator precedence
+.br
+.B ~ @x
+\ prefix operators        : unary minus, math functions
+.br
+.B ^
+\    power operators         : power
+.br
+.B */%&
+\ multiplicative operators: multiply, divide, modulo, bitwise AND
+.br
+.B +-|
+\  additive operators      : add, substract, bitwise OR
+.PP
+Math functions:
+.B @s @c @a @l @e @r
+= sin cos atan log exp sqrt
+.PP
+Incomplete expressions are where an operand is missing from
+between operators. The last result
+.B _
+is used automatically instead.
+.br
+The ultimate incomplete expression is the empty string, meaning the last result.
+.PP
+Attention with unary minus:
+.br
+.B \-expr
+means substracting expr from the last result
+.B _-expr
+, not the negation of expr.
+For unary minus use the
+.B ~
+(tilde) operator.
+.SS Floating point support
+Floating point numbers can be entered in non-scientific form only.
+Examples:
+.B 2.3  .0456
+.PP
+Floting point mode is activated according to the following rules:
+.br
+\- never upon division
+.br
+\- implicitly, if an entered expression contains a float-format number
+.br
+\- implicitly, if power's (^) 2nd operand is negative
+.br
+\- explicitly, with command F
+.PP
+Floating point numbers are displayed in scientific format only if necessary.
+Switching to floating-point implies switching to decimal I/O mode.
+Once in float mode, the commands
+.B B O X
+(binary, octal, hexadecimal) show you the number once in the respective format,
+then return to decimal IO mode.
+.PP
+Switching back from floating-point mode to either signed or unsigned integer mode
+works with the commands
+.B S
+and
+.B N
+, respectively.
+.SS ASSIGNMENTS
+User-variables can be created on the fly, by assigning an expression to them.
+Their form is a dollar-sign plus any number of lowercase letters, numbers
+and underscores.
+.B $life_universe_everything=6*7
+stores 42 into variable $life_universe_everything, while
+.B $bar=
+stores the last result in $bar.
+.PP
+Command V v or \\v lists all variables with values.
+.SS COMMANDS
+Commands are single upper- or lowercase letters, escape lowercase version with
+backslash \\ between [a-f] to avoid confusion with hex numbers.
+.PP
+B \\b binary I/O mode
+.br
+O \\o o octal I/O mode
+.br
+D \\d decimal I/O mode
+.br
+X \\x x hexadecimal I/O mode
+.PP
+N \\n n unsigned (natural number) calculation mode
+.br
+S \\s s signed calculation mode
+.br
+F \\f floating-point calculation mode
+.PP
+P \\p p toggle prompt
+.br
+U \\u u undo, unlimited depth, no redo
+.br
+V \\v v print all variables with values
+.br
+Q \\q q or ^D (EOF Unix) or ^C (interrupt) to quit
+.PP
+Signed / unsigned calculation modes affect only */% operations and decimal
+IO, nothing else.
+.PP
+By default, a prompt is indicating IO and calculation mode,
+if input is coming from a terminal (no pipe, no input file).
+The prompt is printed to stderr.
+.br
+Uppercase prompts B O D X indicate unsinged mode.
+.br
+Lowercase prompts b o d x f indicate signed/float mode.
+.PP
+Undo does remember changes in calculation or I/O mode.
+.SS COMPOUNDS
+.BR szg (1)
+accepts combinations of expressions or statements with a leading or trailing command or both.
+For example
+.B X fffe+1 D
+switches to hex mode temporarily to evaluate fffe+1 then displays the result 65535 in decimal.
+.SS COMMENTS
+Comments between
+.B #
+and end-of-line.
+.SS INPUT FROM COMMAND LINE
+When using the
+.B szg -e expr
+form, be careful with shell expansion taking place before passing expr to szg.
+Quote when necessary. Examples with Bourne compatible shells:
+.br
+.B szg -e 6 * 7
+will fail spectacularly, as your current dir listing will be substituted for *.
+.br
+.B szg -e 6*7
+may work, except if you have a file called 617 in you current dir,
+resulting in 617 instead of 42.
+.br
+.B szg -e \\\\x ffff \\\\d
+fails as the shell removes the backslashes. Rather use the uppercase version of the commands: szg -e X ffff D
+.SH DIAGNOSTICS
+.BR szg (1)
+prints diagnostic messages to stderr, thus they appear on the terminal by
+default. After the error
+.BR szg (1)
+may ignore the entire input line, or just the wrong part of it, or even
+replace the wrong part with the last result.
+Don't forget to undo in suspicious cases. Worse is better.
+.SS syntax error
+The entered expression cannot be parsed
+.SS unknown command
+Entered lowercase letter does not correspond to a known command
+.SS unknown function
+Unimplemented @x sequence (function)
+.SS division by zero
+Attempt at division by zero
+.SS float modulo
+Attempt at modulo
+.B %
+operation on a floating-point number
+.SS n.a. for negative
+Attempt at math functions @l @r (log sqrt) for a negative number
+.SS n.a. for zero
+Attempt at math function @l (log) for zero
+.SS unable to parse number
+When entering 1.2.3 or 12 in binary mode or 12.34ff in float mode
+.SS variable $foo undefined
+Using undefined user-variable in expression
+.SH SEE ALSO
+.BR lex (1),
+.BR yacc (1),
+.BR bc (1).
+.SH AUTHOR
+SZABO Gergely
+.B <szg@subogero.com>
+.br
+Respect to
+.B Stephen C. Johnson
+the creator of
+.BR yacc (1).
+.SH COPYRIGHT
+This is free software, distributed under the WTFPL license.
+.br
+There is absolutely no warranty.
+.SH BUG REPORTS
+Please send bug reports to the email address above, include
+.B szg
+in the Subject field. 
+.br
+Issues, milestones on
+.B http://github.com/subogero/szg
+.br
+Patches welcome!
+PAKK
+chmod 644 szg.1
+cat <<"PAKK" >>szg.c
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include "arg1.h"
+#include "szg.h"
+#include "output.h"
+#include "grammar.h"
+#include "patterns.h"
+#include "vars.h"
+extern int yyparse(void); /* interpreter main loop */
+
+FILE *yyin;
+
+static void __na(void);
+static void bin (void);
+static void hex (void);
+static void dec (void);
+static void oct (void);
+static void natn(void);
+static void sign(void);
+static void fltn(void);
+static void prmt(void);
+static void quit(void);
+static void vars(void);
+static void undo(void);
+
+const t_callback commands[26] = {
+	__na ,  /* A */
+	bin  ,  /* B */
+	__na ,  /* C */
+	dec  ,  /* D */
+	__na ,  /* E */
+	fltn ,  /* F */
+	__na ,  /* G */
+	usage,  /* H */
+	__na ,  /* I */
+	__na ,  /* J */
+	__na ,  /* K */
+	__na ,  /* L */
+	__na ,  /* M */
+	natn ,  /* N */
+	oct  ,  /* O */
+	prmt ,  /* P */
+	quit ,  /* Q */
+	__na ,  /* R */
+	sign ,  /* S */
+	__na ,  /* T */
+	undo ,  /* U */
+	vars ,  /* V */
+	__na ,  /* W */
+	hex  ,  /* X */
+	__na ,  /* Y */
+	__na ,  /* Z */
+};
+
+static int print_req = 0;
+static int prompt = 0;
+
+/* main */
+int main(int argc, char *argv[])
+{
+	char *filename = NULL;
+	char *command  = NULL;
+	char *expr     = NULL;
+
+	/* Parse arguments */
+	if (argc >= 2) {
+		arg1_eval(argv[1]); /* catch and print help/version and exit */
+		if (*(argv[1]) == '-') {
+			command  = argv[1];
+			if (argc >= 3)
+				filename = argv[2];
+		} else {
+			filename = argv[1];
+		}
+	}
+
+	/* Commands found */
+	if (command != NULL) {
+		int i;
+		for (i = 'a'; i <= 'z'; ++i) {
+			if (strchr(command, i) && commands[i - 'a'] != __na)
+				(commands[i - 'a'])();
+		}
+
+		/* -e EXPR on command line, rest of args into buffer expr */
+		if (strchr(command, 'e')) {
+			int i;
+			int len = 0;
+			for (i = 2; i < argc; ++i)
+				len += strlen(argv[i]) + 1;
+			expr = malloc(len + 2);
+			expr[0] = 0;
+			for (i = 2; i < argc; ++i) {
+				strcat(expr, argv[i]);
+				strcat(expr, i < argc-1 ? " " : "\n");
+			}
+			strcat(expr, "\0\0");
+			filename = NULL;
+		}
+	}
+
+	/* Open input stream; Prompt: tty - yes, script/pipe - no */
+	if (!filename) {
+		yyin = stdin;
+		if (!expr && isatty(fileno(yyin)))
+			prmt();
+	} else {
+		yyin = fopen(filename, "r");
+		if (!yyin) {
+			yyerror("Cannot open input file");
+			exit(1);
+		}
+	}
+
+	/* Run the actual calculator */
+	num_display(&output, 0, prompt);
+	YY_BUFFER_STATE yybs;
+	if (expr) {
+		yybs = yy_scan_buffer(expr, strlen(expr) + 2);
+		yy_switch_to_buffer(yybs);
+	}
+	yyparse();
+	if (expr) {
+		yy_delete_buffer(yybs);
+		free(expr);
+	}
+	if (filename)
+		fclose(yyin);
+	quit();
+}
+
+/* Print a number in the actual base-system */
+void print(void)
+{
+	num_display(&output, print_req, prompt);
+	fflush(NULL);
+	print_req = 0;
+}
+
+/* Request printing */
+void print_on(void)
+{
+	print_req = 1;
+}
+
+/* yacc error callback to indicate syntax error */
+int yyerror(const char *s)
+{
+	fprintf(stderr, s);
+	fprintf(stderr, "\n");
+	return 0;
+}
+
+/* command callbacks */
+static void __na(void) { yyerror("unknown command");                   }
+static void bin (void) { if (num_base(&output,  2))     output_push(); }
+static void oct (void) { if (num_base(&output,  8))     output_push(); }
+static void dec (void) { if (num_base(&output, 10))     output_push(); }
+static void hex (void) { if (num_base(&output, 16))     output_push(); }
+static void natn(void) { num_2type(&output, T_NATURAL); output_push(); }
+static void sign(void) { num_2type(&output, T_SIGNED);  output_push(); }
+static void fltn(void) { num_2type(&output, T_FLOAT);   output_push(); }
+static void prmt(void) { prompt = !prompt;                             }
+static void quit(void) { printf("\r"); exit(0);                        }
+static void vars(void) { vars_dbg();                                   }
+static void undo(void) {                                output_pop();  }
+PAKK
+chmod 644 szg.c
+cat <<"PAKK" >>szg.h
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+*******.**********************************************************************/
+#ifndef __szg
+#define __szg
+
+/* Command callbacks */
+typedef void (*t_callback)(void);
+extern const t_callback commands[26];
+
+/* Print result */
+void print(void);
+void print_on(void);
+int yyerror(const char *s);
+
+#endif
+PAKK
+chmod 644 szg.h
+cat <<"PAKK" >>usage.txt
+Usage: szg [-bodxnsfp] [FILE] | [-h] | [-V]
+       szg -[bodxnsfp]e EXPR
+  -h --help    shows usage and exits
+  -V --version shows version info and exits
+  -b start in I/O mode binary
+  -o start in I/O mode octal
+  -d start in I/O mode decimal (default)
+  -x start in I/O mode hexadecimal
+  -n start in calculation mode unsigned (natural number)
+  -s start in calculation mode signed   (default)
+  -f start in calculation mode floating-point
+  -p toggle prompt
+  -e treat the rest of command line as expression
+
+Command line calculator for 32-bit integers and floats.
+Accepts the following constructs from stdin or input FILE if specified
+or directly as command line arguments after as -e EXPR:
+- math expressions built of .0-9a-f, _ $x |&+-*/^ @x ~ (), eg. 2*(2-5)
+  a-f are used for numbers in hexadecimal mode
+  _   is the result of the last operation
+- $[a-z0-9_]+ are user-defined variables
+- operator precedence: (), ~, ^, */%&, +-|
+- math functions @s @c @a @l @e @r: sin cos atan log exp sqrt
+- assignments to variables $x in form of $foo=expr
+- Commands
+- Compounds of statements and leading or trailing commands
+- whitespaces are ignored (not allowed within numbers)
+- Comments between # and end-of-line
+
+Incomplete expressions and assignments (desktop calculator workflow):
+  Missing numbers are replaced by _ (last result), e.g x=*(+2) means x=_*(_+2)
+  Unary minus is ~expr (tilde), -expr is interpreted as _-expr.
+
+Floating point support:
+  Floating-point numbers are accepted only in non-scientific form.
+  szg stays in integer mode, until you explicitely switch to float mode
+  with command F, or implicitly enter a float-format number (e.g. 2.3)
+  as part of an expression. A division does NOT switch to float mode.
+  Operator ^ (power) switches to float if the 2nd operand is negative.
+  Switching to float activates decimal I/O mode implicitly.
+
+Commands:
+  Single upper-case letters, same as the command line options, except V.
+  V prints all user-defined vairables with values.
+  Alternative forms: G .. Z, \\a .. \\z
+  Use command Q or ^D (EOF on Unix) or ^C (interrupt) to exit.
+
+See man szg for more details.
+PAKK
+chmod 644 usage.txt
+cat <<"PAKK" >>vars.c
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+#include "vars.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+/* Hash-bucket element: pointer to next, key-val. */
+struct list {
+	struct list *next;
+	char *key;
+	struct num n;
+	int defined;
+};
+
+/* hash function */
+/* Hash table with 16 buckets */
+#ifndef VARS_HASHSIZE
+#define VARS_HASHSIZE 4
+#endif
+#define BUCKETS (1u << VARS_HASHSIZE)
+static unsigned char hashfunc(char *key);
+struct list *buckets[BUCKETS];
+static struct list *vars_lookup(char *key, int append);
+static int vars_sort(const void *a, const void *b);
+
+/* Allocate a variable */
+char *vars_alloc(char *key)
+{
+	return vars_lookup(key, 1)->key;
+}
+
+/* Set or allocate variable */
+void vars_set(char *key, struct num *n)
+{
+	struct list *this = vars_lookup(key, 1);
+	if (this) {
+		this->n = *n;
+		this->defined = 1;
+	} else {
+		fprintf(stderr, "unable to allocate vaiable %s\n", key);
+	}  
+}
+
+/* Get variable, n written if found in table, otherwise return 1 */
+int  vars_get(char *key, struct num *n)
+{
+	struct list *this = vars_lookup(key, 0);
+	if (this && this->defined) {
+		*n = this->n;
+		return 0;
+	} else {
+		fprintf(stderr, "variable %s undefined\n", key);
+		return 1;
+	}
+}
+
+/*
+ * Calc hash, iterate list in hash bucket until
+ * a) key found        : return key-val
+ * b) end of list found: append and return key-val or return NULL
+ */
+static struct list *vars_lookup(char *key, int append)
+{
+	int hash = hashfunc(key);
+	struct list *this = buckets[hash];
+	struct list **parent = buckets + hash;
+	while (this) {
+		if (!strcmp(key, this->key)) {
+			return this; /* Yesssssss!!! */
+		} else {
+			parent = &this->next;
+			this = this->next;
+		}
+	}
+	/*
+	 * By now, this is NULL and parent points to the list tail's next pointer.
+	 * Append new key-val to list if required, otherwise bye
+	 */
+	if (append) {
+		*parent = malloc(sizeof(struct list));
+		this = *parent;
+		if (this) {
+			this->next = NULL;
+			this->defined = 0;
+			/* Revert if unable to allocate memory for key */
+			this->key = malloc(strlen(key) + 1);
+			if (this->key) {
+				strcpy(this->key, key);
+			} else {
+				free(this);
+				this = NULL;
+			}
+		}
+	}
+	return this;
+}
+
+/* 4-bit hash functions for string */
+static unsigned char hashfunc(char *key)
+{
+	#ifndef VARS_HASH
+	#define VARS_HASH 2 /* Default hash function rotate */
+	#endif
+	/* 32-bit hash */
+	unsigned long hash = 0;
+	#if   VARS_HASH == 6 //"FNV1a"
+	hash = 2166136261u;
+	while (*key) {
+		hash ^= *key++;
+		hash *= 16777619u;
+	}
+	#elif VARS_HASH == 5 //"SAX"
+	while (*key)
+		hash ^= (hash << 5) + (hash >> 2) + *key++;
+	#elif VARS_HASH == 4 //"BERNSTEINm"
+	while (*key)
+		hash = 33 * hash ^ *key++;
+	#elif VARS_HASH == 3 //"BERNSTEIN"
+	while (*key)
+		hash = 33 * hash + *key++;
+	#elif VARS_HASH == 2 //"ROT"
+	while (*key)
+		hash = (hash << 4) ^ (hash >> 28) ^ *key++;
+	#elif VARS_HASH == 1 //"XOR"
+	while (*key)
+		hash ^= *key++;
+	#else                //"ADD"
+	while (*key)
+		hash += *key++;
+	#endif
+	/* xor-folding for final hash-size */
+	hash = ((hash >> VARS_HASHSIZE) ^ hash) & (BUCKETS - 1);
+}
+
+/* Print all variables in alphabetic order */
+void vars_dbg(void)
+{
+	struct list **vars = NULL; /* Dynamic array of struct list pointers */
+	int n_vars = 0;
+	int i;
+	for (i = 0; i < BUCKETS; ++i) {
+		struct list *this = buckets[i];
+		while (this != NULL) {
+			if (!this->defined)
+				goto this_next;
+			n_vars++;
+			vars = vars == NULL
+			? malloc(n_vars * sizeof(struct list*))
+			: realloc(vars, n_vars * sizeof(struct list*));
+			vars[n_vars - 1] = this;
+		this_next:
+			this = this->next;
+		}
+	}
+	/* Alphabetic sort */
+	qsort(vars, n_vars, sizeof(struct list*), vars_sort);
+	for (i = 0; i < n_vars; ++i) {
+		struct list *this = vars[i];
+		printf("%s = ", this->key);
+		num_print(&this->n, 1, 0, BASE_NA);
+	}
+	if (vars != NULL)
+		free(vars);
+}
+
+/* Alphabetic sort of struct list pointers based on key */
+static int vars_sort(const void *a, const void *b)
+{
+	/* Inputs are actually pointers to struct list pointers */
+	struct list *const *aa = a;
+	struct list *const *bb = b;
+	/* Get to the struct list pointers */
+	struct list *aaa = *aa;
+	struct list *bbb = *bb;
+	/* Compare the struct list key strings */
+	return strcmp(aaa->key, bbb->key);
+}
+PAKK
+chmod 644 vars.c
+cat <<"PAKK" >>vars.h
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+/* Hash table for variable storage */
+#ifndef __vars
+#define __vars
+
+#include "num.h"
+
+char *vars_alloc(char *key);
+void vars_set(char *key, struct num *num);
+int  vars_get(char *key, struct num *num);
+void vars_dbg(void);
+
+#endif
+PAKK
+chmod 644 vars.h
+cat <<"PAKK" >>vars_test.c
+#include "num.h"
+#include "vars.h"
+#include <stdio.h>
+#include <string.h>
+
+struct num n = {
+	.type = T_SIGNED, 
+	.base = 10, 
+};
+
+int main(void)
+{
+	/* Fill up variables identified by strings */
+	#define MAX 20
+	char key[MAX] = { 0, };
+	n.val.s = 24; vars_set("$x", &n);
+	n.val.s = 25; vars_set("$y", &n);
+	n.val.s = 26; vars_set("$z", &n);
+	n.val.s = 1; vars_set("$a", &n);
+	n.val.s = 2; vars_set("$b", &n);
+	n.val.s = 3; vars_set("$c", &n);
+	n.val.s = 1; vars_set("$foo", &n);
+	n.val.s = 2; vars_set("$bar", &n);
+	n.val.s = 3; vars_set("$baz", &n);
+	n.val.s = 4; vars_set("$spam", &n);
+	n.val.s = 5; vars_set("$eggs", &n);
+	n.val.s = 42; vars_set("$lue", &n);
+	n.val.s = 1948; vars_set("$izrael", &n);
+	n.val.s = 1967; vars_set("$hatnapos", &n);
+	n.val.s = 1446; vars_set("$exodus", &n);
+	n.val.s = 225;  vars_set("$egypt", &n);
+	n.val.s = 969;  vars_set("$oldest", &n);
+	n.val.s = 911;  vars_set("$bestcar", &n);
+	n.val.s = 1970; vars_set("$unix", &n);
+	n.val.s = 1991; vars_set("$linux", &n);
+	n.val.s = 2760; vars_set("$stelvio", &n);
+	n.val.s = 2650; vars_set("$gavia", &n);
+	n.val.s = 2291; vars_set("$foscagno", &n);
+	n.val.s = 2150; vars_set("$fuorn", &n);
+	n.val.s = 1852; vars_set("$mortirolo", &n);
+	n.val.s = 900;  vars_set("$prato", &n);
+	n.val.s = 1130; vars_set("$cepina", &n);
+	n.val.s = 1800; vars_set("$livigno", &n);
+	n.val.s = 3798; vars_set("$glockner", &n);
+	n.val.s = 3905; vars_set("$ortler", &n);
+	n.val.s = 3860; vars_set("$zebru", &n);
+	n.val.s = 4167; vars_set("$breithorn", &n);
+	n.val.s = 4563; vars_set("$zumstoa", &n);
+	n.val.s = 4478; vars_set("$matterhorn", &n);
+	n.val.s = 4505; vars_set("$weisshorn", &n);
+	n.val.s = 4545; vars_set("$dom", &n);
+	n.val.s = 4810; vars_set("$montblanc", &n);
+	n.val.s = 8850; vars_set("$everest", &n);
+	n.val.s = 8611; vars_set("$ktwo", &n);
+	n.val.s = 8554; vars_set("$kancsendzonga", &n);
+	n.val.s = 8540; vars_set("$lhotse", &n);
+	vars_dbg();
+
+	/* Let user query variables by strings (chop off LF) */
+	while (fgets(key, MAX, stdin)) {
+		char *lf = strchr(key, '\n');
+		if (lf)
+			*lf = 0;
+		if (!vars_get(key, &n))
+			num_display(&n, 1, 0);
+	}
+	return 0;
+}
+PAKK
+chmod 644 vars_test.c
+cat <<"PAKK" >>version.txt
+szg 1.1
+
+Free software, distributed under the WTFPL license
+Copyright 2009-2013 SZABO Gergely <szg@subogero.com>
+PAKK
+chmod 644 version.txt
+#!/bin/sh
+mkdir szg
+cd szg
+cat <<"PAKK" >>.gitignore
+/.bin
+/.win
+/.w64
+/.release
+szg*.tar.gz
+grammar.c
+grammar.h
+patterns.c
+patterns.h
+num
+num.exe
+vars
+vars.exe
+Release.txt
+usage.h
+version.h
+Makefile
+PAKK
+chmod 644 .gitignore
+cat <<"PAKK" >>COPYING
+           DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+                   Version 2, December 2004
+
+Copyright (C) 2004 Sam Hocevar <sam@hocevar.net>
+
+Everyone is permitted to copy and distribute verbatim or modified
+copies of this license document, and changing it is allowed as long
+as the name is changed.
+
+           DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+  TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+
+ 0. You just DO WHAT THE FUCK YOU WANT TO.
+PAKK
+chmod 644 COPYING
+cat <<"PAKK" >>INSTALL
+Compilation Instructions
+------------------------
+Source tarball at http://linux.subogero.com/deb/
+It can be compiled and installed on Linux or Windows/Cygwin.
+Packages needed: gcc, make, flex, bison, mingw32 (for native Win binaries only)
+On Windows, it runs both in Cygwin and Windows command line windows.
+$ ./configure
+$ make
+# make install # installs to /usr/bin (and C:\WINDOWS on Cygwin)
+
+Installation of Windows Binaries
+--------------------------------
+Zip files at http://linux.subogero.com/deb/ contain compiled Windows binaries.
+Download and extract in a new directory.
+Open a Cygwin-terminal window there and type “make install”.
+Or simply copy .win/szg.exe (Win32) or .w64/szg.exe (Win x64) to C:\WINDOWS
+if you don't have Cygwin.
+
+Debian packages
+---------------
+Add the lines below to /etc/apt/sources.list to install szg via apt-get:
+deb http://linux.subogero.com/deb/ /
+deb-src http://linux.subogero.com/deb/ /
+
+Add my PGP public-key to verify package authenticity:
+# curl linux.subogero.com/deb/subogero.asc | apt-key add -
+
+Finally, install szg:
+# apt-get update
+# apt-get install szg
+
+Note: rpm packages are available at the same location too.
+PAKK
+chmod 644 INSTALL
+cat <<"PAKK" >>Makefile.in
+##############################################################################
+# (c) SZABO Gergely, 2009
+# Free software, distributed under the WTFPL license
+# There is absolutely no warranty.
+##############################################################################
+define DESCR
+Description: Fast command line calculator
+ Command line calculator with a very fast workflow,
+ unsigned/signed int float modes, dec hex oct bin formats
+ user defined variables, comments and unlimited undo.
+endef
+export DESCR
+
+####### Macros #######
+SHELL := /bin/bash
+
+# Target and sources
+BIN := .bin
+WIN := .win
+W64 := .w64
+REL := .release
+
+# Windows/Unix targets compiled on Windows/Unix
+WARGET := szg.exe
+TARGET :=
+
+# Defines
+ifneq "$(VARS)" "no"
+CDEFS  := -DVARS
+endif
+
+ifdef VARS_HASH
+CDEFS  += -DVARS_HASH=$(VARS_HASH)
+endif
+
+ifdef VARS_HASHSIZE
+CDEFS  += -DVARS_HASHSIZE=$(VARS_HASHSIZE)
+endif
+
+# Unix targets compiled on both Windows/Unix
+CC     := gcc
+CFLAGS := -g -Wno-format -Wmissing-prototypes $(CDEFS)
+LIBS   := -lm
+
+# Windows targets compiled on Windows/Unix
+WC :=
+WLIBS :=
+W64C :=
+W64LIBS :=
+
+# Sources
+CSRC := szg.c grammar.c output.c num.c patterns.c arg1.c
+HSRC := szg.h output.h num.h arg1.h version.h usage.h
+
+ifneq "$(VARS)" "no"
+CSRC   += vars.c
+HSRC   += vars.h
+endif
+
+TMPF := patterns.c patterns.h grammar.c grammar.h num usage.h version.h *~ *.tar.gz
+
+MANPAGE:= szg.1
+MANDIR := $(DESTDIR)/usr/share/man/man1
+BINDIR := $(DESTDIR)/usr/bin
+
+####### Rules ########
+.PHONY: all num vars install uninstall clean commit tarball tag release deb
+
+# Compile targets
+all: $(BIN)/$(TARGET)
+$(BIN)/$(TARGET): $(CSRC) $(HSRC) Makefile usage.txt version.txt
+	@if [ ! -d $(BIN) ]; then mkdir $(BIN); fi
+	$(CC) $(CFLAGS) -o $(BIN)/$(TARGET) $(CSRC) $(LIBS)
+	pakol || true
+win: $(WIN)/$(WARGET)
+$(WIN)/$(WARGET): $(CSRC) $(HSRC) Makefile usage.txt version.txt
+	@if [ ! -d $(WIN) ]; then mkdir $(WIN); fi
+	$(WC) $(CFLAGS) -o $(WIN)/$(WARGET) $(WLIBS) $(CSRC) $(LIBS);
+w64: $(W64)/$(WARGET)
+$(W64)/$(WARGET): $(CSRC) $(HSRC) Makefile usage.txt version.txt
+	@if [ ! -d $(W64) ]; then mkdir $(W64); fi
+	$(W64C) $(CFLAGS) -o $(W64)/$(WARGET) $(W64LIBS) $(CSRC) $(LIBS);
+
+# num test-suite
+num:
+	@$(CC) $(CFLAGS) -lm -o num num.c num_test.c
+
+# vars test-suite
+vars:
+	@$(CC) $(CFLAGS) -lm -o vars vars.c num.c vars_test.c
+
+# c/h from y (yacc)
+%.c: %.y
+	bison -d -o $@ $<
+
+# c from l (lex)
+%.c: %.l
+	flex --header-file=patterns.h -o $@ $<
+
+# Create headers with C string initializers from text files
+%.h: %.txt
+	@sed -e 's/[ \t]*$$//g' -e 's/^/"/g' -e 's/$$/\\n",/g' <$< >$@
+
+# Install to c/cygdrive/WINDOWS /usr/bin
+install:
+	@mkdir -p $(BINDIR)
+	@cp -f $(BIN)/$(TARGET) $(BINDIR)
+	@mkdir -p $(MANDIR)
+	@cp -f $(MANPAGE) $(MANDIR)
+	@gzip --best $(MANDIR)/$(MANPAGE)
+	@cp -f $(WIN)/$(WARGET) /cygdrive/c/WINDOWS
+	@cp -f $(W64)/$(WARGET) /cygdrive/c/WINDOWS
+
+# Uninstall from c/cygdrive/WINDOWS /usr/bin
+uninstall:
+	@rm -f $(BINDIR)/$(TARGET)
+	@rm -f $(MANDIR)/$(MANPAGE).gz
+	@rm -f /cygdrive/c/WINDOWS/$(WARGET)
+
+# Remove all generated files
+clean:
+	@rm -rf $(BIN) $(WIN) $(W64) $(TMPF)
+
+# Source tarball and zip file with Win32 executable
+tarball: clean
+	export TAG=`sed -rn 's/^szg (.+)$$/\1/p' version.txt`; \
+	$(MAKE) balls
+balls:
+	mkdir -p $(REL)/szg-$(TAG); \
+	cp -rt $(REL)/szg-$(TAG) *; \
+	cd $(REL); \
+	tar -czf szg_$(TAG).tar.gz szg-$(TAG); \
+	[ -f *zip ] && rm *zip; \
+	zip -r   szg_$(TAG).zip    szg-$(TAG); \
+	cd ..; \
+	$(MAKE) $(WIN)/$(WARGET); \
+	zip $(REL)/szg_$(TAG).zip $(WIN)/$(WARGET)
+	$(MAKE) $(W64)/$(WARGET); \
+	zip $(REL)/szg_$(TAG).zip $(W64)/$(WARGET)
+
+# Commit to git repository
+commit:
+	@if [ "`git diff --no-ext-diff HEAD`" ]; \
+	  then git commit -a;     \
+	fi
+
+# Create a tagged commit for release
+tag: commit
+	@echo 'Chose old tag to follow: '; \
+	select OLD in `git tag`; do break; done; \
+	export TAG; \
+	read -p 'Please Enter new tag name: ' TAG; \
+	sed -r -e "s/^szg.*$$/szg $$TAG/" \
+	       -e 's/([0-9]{4}-)[0-9]*/\1'`date +%Y`/ \
+	       -i version.txt || exit 1; \
+	git commit -a -m "version $$TAG"; \
+	echo Adding git tag $$TAG; \
+	echo "szg ($$TAG)" > changelog; \
+	if [ -n "$$OLD" ]; then \
+	  git log --pretty=format:"  * %h %an %s" $$OLD.. >> changelog; \
+	  echo >> changelog; \
+	else \
+	  echo '  * Initial release' >> changelog; \
+	fi; \
+	echo " -- `git config user.name` <`git config user.email`>  `date -R`" >> changelog; \
+	$$EDITOR changelog; \
+	git tag -a -F changelog $$TAG HEAD; \
+	rm changelog
+
+# Push to all git remotes
+push:
+	@REMOTES=`git remote -v | sed -rn 's/^(.+)\t[^ ]+ \(push\)$$/\1/p'`; \
+	for REMOTE in $$REMOTES; do \
+	  git push --tags $$REMOTE; \
+	  git push --all  $$REMOTE; \
+	done
+
+# Source and binary Debian packages
+deb: tarball $(BIN)/$(TARGET)
+	export TAG=`sed -rn 's/^szg (.+)$$/\1/p' version.txt`; \
+	export DEB=$(REL)/szg-$${TAG}/debian; \
+	$(MAKE) debs
+debs:
+	-rm $(REL)/*.deb
+	cp -f $(REL)/szg_$(TAG).tar.gz $(REL)/szg_$(TAG).orig.tar.gz 
+	mkdir -p $(DEB)
+	echo 'Source: szg'                                            >$(DEB)/control
+	echo 'Section: math'                                         >>$(DEB)/control
+	echo 'Priority: optional'                                    >>$(DEB)/control
+	sed -nr 's/^C.+ [-0-9]+ (.+)$$/Maintainer: \1/p' version.txt >>$(DEB)/control
+	echo 'Build-Depends: debhelper, flex, bison'                 >>$(DEB)/control
+	echo 'Standards-version: 3.8.4'                              >>$(DEB)/control
+	echo                                                         >>$(DEB)/control
+	echo 'Package: szg'                                          >>$(DEB)/control
+	echo 'Architecture: any'                                     >>$(DEB)/control
+	echo 'Depends: $${shlibs:Depends}, $${misc:Depends}'         >>$(DEB)/control
+	echo "$$DESCR"                                               >>$(DEB)/control
+	grep Copyright version.txt                    >$(DEB)/copyright
+	echo 'License: WTFPL'                        >>$(DEB)/copyright
+	echo ' See /usr/share/common-licenses/WTFPL' >>$(DEB)/copyright
+	echo 7 > $(DEB)/compat
+	for i in `git tag | sort -rg`; do git show $$i | sed -n '/^szg/,/^ --/p'; done \
+	| sed -r 's/^szg \((.+)\)$$/szg (\1-1) UNRELEASED; urgency=low/' \
+	| sed -r 's/^(.{,79}).*/\1/' \
+	> $(DEB)/changelog
+	$(EDITOR) $(DEB)/changelog
+	echo '#!/usr/bin/make -f' > $(DEB)/rules
+	echo '%:'                >> $(DEB)/rules
+	echo '	dh $$@'          >> $(DEB)/rules
+	chmod 755 $(DEB)/rules
+	mkdir -p $(DEB)/source
+	echo '3.0 (quilt)' > $(DEB)/source/format
+	@cd $(REL)/szg-$(TAG) && \
+	echo && echo List of PGP keys for signing package: && \
+	gpg -K | grep uid && \
+	read -ep 'Enter key ID (part of name or alias): ' KEYID; \
+	if [ "$$KEYID" ]; then \
+	  dpkg-buildpackage -k$$KEYID; \
+	else \
+	  dpkg-buildpackage -us -uc; \
+	fi
+	lintian $(REL)/*.deb
+	fakeroot alien -kr $(REL)/*.deb; mv *.rpm $(REL)
+
+# Release
+release: tag deb push
+PAKK
+chmod 644 Makefile.in
+cat <<"PAKK" >>README
+szg is a command line calculator with an extremely fast and intuitive workflow.
+
+Features
+--------
+32-bit integer or floating-point arithmetic
+Missing operands or _ anywhere are replaced with the last result:
+Input:
+  szg           - expressions, variable assignments and commands on stdin
+  szg <FILE>    - from file specified on command line
+  szg -e <expr> - expression directly from the command line
+Comma-grouping of input allowed
+Unlimited undo
+Operators ()~ ^ */% +- &| =   ATTENTION: unary minus is ~ (tilde)
+Math functions @s @c @a @l @e @r = sin cos atan log exp sqrt
+User defined variables like $foo
+Decimal, binary, octal or hexadecimal format (commands D, B, O, X)
+Unsigned integer, signed integer and float modes (commands N, S, F)
+Prompt shows unsigned/integer/float mode and bin/oct/dec/hex format (DdBbOoXxf)
+Floating-point mode never upon division, only upon F or float literal
+Combination of expressions/commands on same line
+Comments starting with #
+
+Examples
+--------
+d XffffD  # Prompt d: signed int mode, decimal format. Convert hex to decimal
+65535
+d 4+3     # Addition
+7
+d *       # Both operands missing, means 7*7
+49
+d /2      # integer division, result remains integer
+24
+d /5.0    # floating point division upon request, shown by prompt f
+4.8
+f @r      # square root, missing operand, means @r(4.8)
+2.19089
+f B       # look at the bitwise storage of the float number in memory
+0,10000000,00011000011011110001100
+2.19089
+f $foo=   # store in variable $foo
+2.19089
+f 1/      # reciprocal is easy even without a special function
+0.456435
+f
+PAKK
+chmod 644 README
+cat <<"PAKK" >>Test
+#!/usr/bin/szg
+# Test script for szg.
+# Invoke: "szg Test" or simply "./Test"
+# It shall produce the following output:
+# 42
+# 42
+# 42
+
+# 42 hex
+11*3*2 X
+
+# 42 oct
+ f*2+4 O # Leading space
+
+# 42 dec
+	52 D # Leading tab
+
+	# Leading tab and comment
+PAKK
+chmod 755 Test
+cat <<"PAKK" >>arg1.c
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+*******************************************************************************/
+#include "arg1.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+/* Perform Usage/Version display if 1st arg is -h/-V */
+void arg1_eval(const char* arg1) {
+	if (strstr(arg1, "-h") || strstr(arg1, "--help")) {
+		usage();
+		exit(0);
+	}
+	if (strstr(arg1, "-V") || strstr(arg1, "--version")) {
+		version();
+		exit(0);
+	}
+}
+
+/* Display usage when called with -h */
+void usage(void) {
+	int i;
+	static const char* lines[] = {
+		#include "usage.h"
+	};
+	for (i = 0; i < sizeof lines / sizeof(char*); i++)
+		printf(lines[i]);
+}
+
+
+/* Display version info when called with -v */
+void version(void) {
+	int i;
+	static const char* lines[] = {
+		#include "version.h"
+	};
+	for (i = 0; i < sizeof lines / sizeof(char*); i++)
+		printf(lines[i]);
+}
+PAKK
+chmod 644 arg1.c
+cat <<"PAKK" >>arg1.h
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+/*
+ * Utility to display Usage/Version text and exit if arg1 is "-h"/"-V"
+ * Text shall be defined as string initializer-lists in usage.h and version.h
+ * Generate headers automatically from plain text files with a make rule:
+ * %.h: %.txt
+ *	sed -e 's/[ \t]*$$//g' -e 's/^/"/g' -e 's/$$/\\n",/g' <$< >$@
+ */
+
+#ifndef __arg1
+#define __arg1
+void arg1_eval(const char* arg1);
+void usage(void);
+void version(void);
+#endif
+PAKK
+chmod 644 arg1.h
+cat <<"PAKK" >>configure
+#!/bin/sh
+##############################################################################
+# (c) SZABO Gergely, 2012
+# Free software, distributed under the WTFPL license
+# There is absolutely no warranty.
+##############################################################################
+prefix_w32='i686-w64-mingw32 i686-pc-mingw32 i586-mingw32msvc'
+prefix_w64='x86_64-w64-mingw32 amd64-mingw32msvc'
+
+error() {
+  echo Error "$@"
+  exit 1
+}
+
+# check gcc flex bison
+echo --- Checking gcc ---
+which gcc || error
+
+echo --- Checking flex ---
+which flex || error
+
+echo --- Checking bison ---
+which bison || error
+
+# Which OS?
+echo --- Checking OS ---
+if env | egrep "PROCESSOR_IDENTIFIER=Intel64"; then
+  OS=w64
+elif env | egrep "PROCESSOR_IDENTIFIER=x86"; then
+  OS=w32
+elif uname -a | egrep "x86_64 GNU/Linux"; then
+  OS=l64
+elif uname -a | egrep "i.86 GNU/Linux"; then
+  OS=l32
+else
+  error
+fi
+
+# TARGET w/ or w/o .exe
+if [ $OS = 'l32' -o $OS = 'l64' ]; then
+  target=szg
+else
+  target=szg.exe
+fi
+echo TARGET = $target
+
+# WC WLIBS W64C W64LIBS
+echo --- Checking Win64 cross compilers ---
+for w64c in $prefix_w64; do
+  if which $w64c-gcc; then
+    w64libs="-L/usr/$w64c/lib -I/usr/$w64c/include"
+    break
+  else
+    w64c=''
+  fi
+done
+
+echo --- Checking Win32 cross compilers ---
+for wc in $prefix_w32; do
+  if which $wc-gcc; then
+    wlibs="-L/usr/$wc/lib -I/usr/$wc/include"
+    break
+  else
+    wc=''
+  fi
+done
+
+# Print basic part of Makefile
+echo --- Printing targets ---
+sed -r "s/^(TARGET :=)/& $target/" Makefile.in > Makefile
+[ "$wc" -o "$w64c" ] || sed -r '/^WARGET :=/d' -i Makefile
+
+if [ "$w64c" ]; then
+  echo Printing Windows x64 cross-compiler
+  sed -r -e "s/^W64C :=/& $w64c-gcc/" \
+         -e "s,^W64LIBS :=,& $w64libs," \
+         -i Makefile
+else
+  echo Removing Windows x64 cross-compiler
+  sed "/^W64C :=/,/^W64LIBS :=/d" -i Makefile
+  sed "/^W64 :=/d" -i Makefile
+  sed '/^w64: /,/^\t$(W64C)/d' -i Makefile
+fi
+
+if [ "$wc" ]; then
+  echo Printing Win32 cross-compiler
+  sed -r -e "s/^WC :=/& $wc-gcc/" \
+         -e "s,^WLIBS :=,& $wlibs," \
+         -i Makefile
+else
+  echo Removing Win32 cross-compiler
+  sed "/^WC :=/,/^WLIBS :=/d" -i Makefile
+  sed "/^WIN :=/d" -i Makefile
+  sed '/^win: /,/^\t$(WC)/d' -i Makefile
+fi
+
+echo --- Changing install uninstall rules for Windows ---
+[ $OS = l32 -o $OS = l64 ]   && sed -r '\,rm.+cygdrive,d' -i Makefile
+[ $OS != w64 -o -z "$w64c" ] && sed -r '\,cp.+W64.+cygdrive,d' -i Makefile
+[ $OS != w32 -o -z "$wc" ]   && sed -r '\,cp.+WIN.+cygdrive,d' -i Makefile
+
+# zip
+echo --- Checking zip ---
+which zip || sed -r '/\[ -f \*zip/,/zip.+W64/d' -i Makefile
+[ "$w64c" ] || sed -r '/MAKE.+W64/,/zip.+W64/d' -i Makefile
+[ "$wc" ]   || sed -r '/MAKE.+WIN/,/zip.+WIN/d' -i Makefile
+
+# git
+echo --- Checking git ---
+which git || sed -r '/Commit to git/,$ d' -i Makefile
+
+# deb
+echo --- Checking deb rpm building tools ---
+which dpkg-buildpackage && \
+which lintian           && \
+which alien             || \
+sed '/Debian packages/,$ d' -i Makefile
+PAKK
+chmod 755 configure
+cat <<"PAKK" >>grammar.y
+/*****************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+*****************************************************************************/
+%{
+#include "num.h"
+%}
+
+%union {
+	char u8;
+	char *id;
+	struct num n;
+}
+
+%{
+#include "szg.h"
+#include "output.h"
+#include <stdio.h>
+
+#ifdef VARS
+#include "vars.h"
+#else
+#define vars_set(key,num) fprintf(stderr, "vars support not enabled\n")
+#define vars_get(key,num) vars_set(key,num)
+#endif
+
+//#define DEBUG
+static void dbg(char* term);
+%}
+
+
+%start list
+
+%token <u8>  COMMAND OPADD OPMUL OPPOW OPPRE
+%token <id>  VAR
+%token <n> NUMBER
+
+%type <n> expr
+
+%left OPADD        // additive operators       +-|
+%left OPMUL        // multiplicative operators */%&
+%left OPPOW        // power operator           ^
+%nonassoc OPPRE    // prefix operators         ~
+
+%%
+list : // empty
+     | list stm '\n'         { dbg("ls");   print(); }
+     | list cmd '\n'         { dbg("lc");   print(); }
+     | list cmd stm '\n'     { dbg("lcs");  print(); }
+     | list stm cmd '\n'     { dbg("lsc");  print(); }
+     | list cmd stm cmd '\n' { dbg("lcsc"); print(); }
+     | list error '\n'       { dbg("lerr"); yyerrok; print(); }
+     ;
+cmd  : COMMAND               { dbg("cmd");  commands[$1](); }
+     ;
+stm  : expr                  { dbg("stm");  output = $1; output_push(); }
+     | VAR '=' expr          { dbg("var");  vars_set($1, &$3); }
+     ;
+expr :                       { dbg("non");  output_get(); $$ = output; }
+     | '_'                   { dbg("unl");  output_get(); $$ = output; }
+     | '(' expr ')'          { dbg("par");  $$ = $2; }
+     | expr OPADD expr       { dbg("oad");  $$ = num_infix ($1, $2, $3); }
+     | expr OPMUL expr       { dbg("omu");  $$ = num_infix ($1, $2, $3); }
+     | expr OPPOW expr       { dbg("opo");  $$ = num_infix ($1, $2, $3); }
+     | OPPRE expr            { dbg("opr");  $$ = num_prefix($1, $2); }
+     | VAR                   { dbg("var");  if (vars_get($1,&$$)) $$=output; }
+     | NUMBER                { dbg("num");  $$ = $1; }
+     ;
+%%
+
+static void dbg(char* term) {
+#ifdef DEBUG
+	printf("yacc %s\n", term);
+#endif
+}
+PAKK
+chmod 644 grammar.y
+cat <<"PAKK" >>num.c
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+#include "num.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <math.h>
+
+static void comma_strip(char *yytext);
+static void comma_group(char *binary, unsigned int val, int ieee754);
+static struct num num_power(struct num src1, struct num src2);
+
+/* Value in actual type (can be lvalue) */
+#define VALUE(this) ( (this)->type == T_NATURAL ? (this)->val.n \
+                    : (this)->type == T_SIGNED  ? (this)->val.s \
+                    :                             (this)->val.f )
+
+/* Type Conversion */
+void num_2type(struct num *this, char type) {
+	switch (type) {
+	case T_FLOAT:
+		this->val.f = (float)VALUE(this);
+		this->type = T_FLOAT;
+		this->base = 10;
+		break;
+	case T_SIGNED:
+	case T_NATURAL:
+		if (this->type == T_FLOAT) this->val.s = (int)this->val.f;
+		this->type = type;
+		break;
+	}
+}
+
+void num_matchtype(struct num *this, struct num *that) {
+	if (this->type < that->type)
+		num_2type(this, that->type);
+	else if (that->type < this->type)
+		num_2type(that, this->type);
+}
+
+/* Infix operators */
+struct num num_infix(struct num src1, char op, struct num src2) {
+	/* Division by zero check */
+	if ((op == '/' || op == '%') && !src2.val.n) {
+		fprintf(stderr, "division by zero\n");
+		return src1;
+	}
+	/* Float mod check */
+	if (op == '%' && (src1.type == T_FLOAT || src2.type == T_FLOAT)) {
+		fprintf(stderr, "float modulo\n");
+		return src1;
+	}
+	/* Automatic type match: *|^ never, +- if any float, /%* always */
+	if (op != '&' && op != '|' && op != '^' &&
+	    (src1.type == T_FLOAT || src2.type == T_FLOAT ||
+	     op != '+' && op != '-'))
+		num_matchtype(&src1, &src2);
+	/* Do my teng... */
+	switch (op) {
+	case '&':
+		src1.val.n &= src2.val.n;
+		return src1;
+	case '|':
+		src1.val.n |= src2.val.n;
+		return src1;
+	case '+':
+		if (src1.type == T_FLOAT)
+			src1.val.f += src2.val.f;
+		else
+			src1.val.s += src2.val.s;
+		return src1;
+	case '-':
+		if (src1.type == T_FLOAT)
+			src1.val.f -= src2.val.f;
+		else
+			src1.val.s -= src2.val.s;
+		return src1;
+	case '*':
+		if (src1.type == T_FLOAT)
+			src1.val.f *= src2.val.f;
+		else if (src1.type == T_SIGNED)
+			src1.val.s *= src2.val.s;
+		else
+			src1.val.n *= src2.val.n;
+		return src1;
+	case '/':
+		if (src1.type == T_FLOAT)
+			src1.val.f /= src2.val.f;
+		else if (src1.type == T_SIGNED)
+			src1.val.s /= src2.val.s;
+		else
+			src1.val.n /= src2.val.n;
+		return src1;
+	case '%':
+		if (src1.type == T_SIGNED)
+			src1.val.s %= src2.val.s;
+		else
+			src1.val.n %= src2.val.n;
+		return src1;
+	case '^':
+		return num_power(src1, src2);
+	default:
+		return src1;
+	}
+}
+
+/* Prefix operators */
+struct num num_prefix(char op, struct num src) {
+	switch (op) {
+	case '~':
+		if (src.type == T_FLOAT)
+			src.val.f = -src.val.f;
+		else
+			src.val.s = -src.val.s;
+		break;
+	default:
+		num_2type(&src, T_FLOAT);
+		if (src.val.f < 0.0 && (op == 'l' || op == 'r')) {
+			fprintf(stderr, "n.a. for negative\n");
+			return src;
+		}
+		if (src.val.f == 0.0 && op == 'l') {
+			fprintf(stderr, "n.a. for zero\n");
+			return src;
+		}
+		src.val.f = op == 's' ? sin (src.val.f)
+		          : op == 'c' ? cos (src.val.f)
+		          : op == 'a' ? atan(src.val.f)
+		          : op == 'l' ? log (src.val.f)
+		          : op == 'e' ? exp (src.val.f)
+		          : op == 'r' ? sqrt(src.val.f)
+		          : (fprintf(stderr, "unknown function\n"), src.val.f);
+		break;
+	}
+	return src;
+}
+
+/* Parse */
+int num_parse(struct num *this, char *yytext) {
+	int success = 0;
+	comma_strip(yytext);
+	/* attempt actual type and base */
+	if (this->type != T_FLOAT) {
+		char *p_end;
+		long long num = strtoll(yytext, &p_end, this->base);
+		if (p_end - yytext == strlen(yytext)) {
+			this->val.s = num;
+			success = 1;
+		}
+	} else {
+		char *p_end;
+		float num = strtod(yytext, &p_end);
+		if (p_end - yytext == strlen(yytext)) {
+			this->val.f = num;
+			success = 1;
+		}
+	}
+	/* attampt float if failed */
+	if (!success && this->type != T_FLOAT && strchr(yytext, '.')) {
+		num_2type(this, T_FLOAT);
+		success = num_parse(this, yytext);
+	}
+	if (!success)
+		fprintf(stderr, "unable to parse number\n");
+	return success;
+}
+
+/* Print */
+void num_print(struct num *this, int num, int prompt, char base) {
+	/* Print formats with optional prompt */
+	char type;
+	int index = 0;
+	static const int bases[] = {
+		2,        8,        10,       16
+	};
+	static const char *formats[] = {
+		"%B\n",   "%o\n",   "%u\n",   "%x\n",   /* natural */
+		"%B\n",   "%o\n",   "%d\n",   "%x\n",   /* signed */
+		"%B\n",   "%o\n",   "%g\n",   "%x\n",   /* float */
+	};
+	static const char *prompts[] = {
+		"B ",     "O ",     "D ",     "X ",
+		"b ",     "o ",     "d ",     "x ",
+		"f ",     "f ",     "f ",     "f ",
+	};
+	/* Find format */
+	if (base == BASE_NA) base = this->base;
+	while (bases[index] != base)
+		index++;
+	index += 4 * this->type;
+	type = this->type;
+	if (type == T_FLOAT && base != 10)
+		type = T_SIGNED;
+	/* Special code to print binary format */
+	if (base == 2) {
+		char *postfix = strchr(formats[index], '\n');
+		char binary[40] = "";
+		comma_group(binary, this->val.n, this->type == T_FLOAT);
+		strcat(binary, postfix);
+		printf("%s", binary);
+	} else if (num) {
+		switch (type) {
+		case T_NATURAL:
+			printf(formats[index], this->val.n);
+			break;
+		case T_SIGNED :
+			printf(formats[index], this->val.s);
+			break;
+		case T_FLOAT  :
+			printf(formats[index], this->val.f);
+			break;
+		}
+	}
+	if (prompt)
+		fprintf(stderr, prompts[index]);
+}
+
+/* Set, or, print in, base */
+int num_base(struct num *this, char base)
+{
+	if (base != 2 && base != 8 && base != 10 && base != 16)
+		return 0;
+	if (this->type == T_FLOAT) {
+		num_print(this, 1, 0, base);
+		return 0;
+	} else {
+		this->base = base;
+		return 1;
+	}
+}
+
+/* Comma functions: strip commas from input, comma group binary output */
+static void comma_strip(char *yytext) 
+{
+	char *comma_group;
+	while (comma_group = strchr(yytext, ','))
+		memmove(comma_group, comma_group + 1, strlen(comma_group));
+}
+
+static void comma_group(char *binary, unsigned int val, int ieee754)
+{
+	int bit = 31;
+	while (bit >= 0) {
+		unsigned int mask = 1U << (unsigned int)bit;
+		strcat(binary, val & mask ? "1" : "0");
+		if (bit && (ieee754 ? bit == 31 || bit == 23 : bit % 8 == 0))
+			strcat(binary, ",");
+		bit--;
+	}
+}
+
+/* Power operator */
+static struct num num_power(struct num src1, struct num src2) {
+	/* Convert to float if any operand float, or power negative */
+	if (src2.type == T_SIGNED && src2.val.s < 0)
+		num_2type(&src2, T_FLOAT);
+	if (src1.type == T_FLOAT || src2.type == T_FLOAT) {
+		num_matchtype(&src1, &src2);
+		src1.val.f = pow(src1.val.f, src2.val.f);
+		return src1;
+	}
+	/* Integer power */
+	if (src2.val.n == 0) {
+		src1.val.s = 1;
+		return src1;
+	}
+	struct num tmp = src1;
+	unsigned int i;
+	for (i = 1; i < src2.val.n; ++i) {
+		if (tmp.type == T_SIGNED)
+			src1.val.s *= tmp.val.s;
+		else
+			src1.val.n *= tmp.val.n;
+	}
+	return src1;
+}
+PAKK
+chmod 644 num.c
+cat <<"PAKK" >>num.h
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+#ifndef __tNum
+#define __tNum
+
+#define T_NATURAL 0
+#define T_SIGNED  1
+#define T_FLOAT   2
+
+#define BASE_NA 0
+
+struct num {
+	union {
+		unsigned int n;
+		int          s;
+		float        f;
+	} val;
+	char type;
+	char base;
+};
+
+void num_2type(struct num *this, char type);
+void num_matchtype(struct num *this, struct num *that);
+
+struct num num_infix(struct num src1, char op, struct num src2);
+struct num num_prefix(char op, struct num src);
+
+int num_parse(struct num *this, char *yytext);
+void num_print(struct num *this, int num, int prompt, char base);
+#define num_display(this,num,prompt) num_print(this,num,prompt,BASE_NA)
+
+int num_base(struct num *this, char base);
+
+#endif
+PAKK
+chmod 644 num.h
+cat <<"PAKK" >>num_test.c
+#include "num.h"
+int main(void) {
+  struct num n1, n2;
+
+  n1.val.n = 2700000000U;
+  n1.type = T_NATURAL;
+  n1.base = 16;
+
+  n2.val.f = 30.0;
+  n2.type = T_FLOAT;
+  n2.base = 10;
+
+  num_display(&n1, 1, 0);
+  num_display(&n2, 1, 0);
+
+  n1 = num_infix(n1, '/', n2);
+  num_display(&n1, 1, 0);
+
+  num_print(&n1, 1, 0, 2);
+  num_print(&n2, 1, 0, 2);
+
+  n1 = num_infix(n1, '|', n2);
+  num_print(&n1, 1, 0, 2);
+}
+PAKK
+chmod 644 num_test.c
+cat <<"PAKK" >>output.c
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+#include <stdlib.h>
+#include "output.h"
+
+/* Output of the last statement */
+struct num output = { { 0 }, T_SIGNED, 10 };
+/* Linked list element with data and link */
+struct stack_t {
+	struct num data;
+	struct stack_t *link;
+};
+/* Pointer to top of stack */
+static struct stack_t *stack_top = NULL;
+/* Default data store used if dynamic memory allocation fails */
+static struct num default_data = { { 0 }, T_SIGNED, 10 };
+
+/* Get top of undo stack into output */
+void output_get(void)
+{
+	output = stack_top == NULL ? default_data : stack_top->data;
+}
+
+/* Pop: discard top of undo stack, then get top of stack into output */
+void output_pop(void)
+{
+	if (stack_top != NULL) {
+		struct stack_t *old_top = stack_top;
+		stack_top = old_top->link;
+		free(old_top);
+	}
+	output_get();
+}
+
+/* Push output to top of undo stack */
+void output_push(void)
+{
+	struct stack_t *new_top = malloc(sizeof(struct stack_t));
+	if (new_top != NULL) {
+		new_top->data = output;
+		new_top->link = stack_top;
+		stack_top = new_top;
+	} else {
+		while (stack_top)
+			(void)output_pop();
+		default_data = output;
+	}
+}
+
+/* Show contents of entire undo stack */
+void output_show(void)
+{
+	struct stack_t *this = stack_top;
+	while (this != NULL) {
+		num_display(&this->data, 1, 0);
+		this = this->link;
+	}
+}
+PAKK
+chmod 644 output.c
+cat <<"PAKK" >>output.h
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+/* Undo stack for the outputs of all previous statements  */
+#include "num.h"
+
+/* Output of the last statement stored here */
+extern struct num output;
+
+/* Read from, pop, push to the top of, and examine the stack*/
+void output_get(void);
+void output_pop(void);
+void output_push(void);
+void output_show(void);
+PAKK
+chmod 644 output.h
+cat <<"PAKK" >>patterns.l
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+%option always-interactive
+%{
+#include <stdlib.h>
+#include "output.h"
+#include "grammar.h"
+#include "szg.h"
+%}
+
+%%
+#.*$
+;
+[ \t]
+;
+[A-Z]	{
+	print_on();
+	yylval.u8 = yytext[0] - 'A';
+	return COMMAND;
+}
+\\[a-z]	{
+	print_on();
+	yylval.u8 = yytext[1] - 'a';
+	return COMMAND;
+}
+[g-z]	{
+	print_on();
+	yylval.u8 = yytext[0] - 'a';
+	return COMMAND;
+}
+[-+|]	{
+	print_on();
+	yylval.u8 = *yytext;
+	return OPADD;
+}
+[*/%&]	{
+	print_on();
+	yylval.u8 = *yytext;
+	return OPMUL;
+}
+\^	{
+	print_on();
+	yylval.u8 = *yytext;
+	return OPPOW;
+}
+~	{
+	print_on();
+	yylval.u8 = *yytext;
+	return OPPRE;
+}
+@[a-z]	{
+	print_on();
+	yylval.u8 = yytext[1];
+	return OPPRE;
+}
+\$[a-z0-9_]+	{
+	print_on();
+	yylval.id = vars_alloc(yytext);
+	return VAR;
+}
+[0-9a-f.,]+	{
+	print_on();
+	num_parse(&output, yytext);
+	yylval.n = output;
+	return NUMBER;
+}
+.	{
+	print_on();
+	return *yytext;
+}
+\n	{
+	return *yytext;
+}
+%%
+
+int yywrap(void) {
+	return 1;
+}
+PAKK
+chmod 644 patterns.l
+cat <<"PAKK" >>szg.1
+.TH SZG 1 "Distributed under WTFPL" "(c) SZABO Gergely"
+.SH NAME
+szg \- SZámolóGép (Hungarian for calculator) written by SzG
+.SH SYNOPSIS
+szg [-bodxnsfp] [FILE] | [-h] | [-V]
+.br
+szg -[bodxnsfp]e EXPR
+.SH USAGE
+Options:
+.br
+\-h --help     display usage and exit
+.br
+\-V --version  display version information and exit
+.PP
+Commands:
+.br
+-b start in binary I/O mode
+.br
+-o start in octal I/O mode
+.br
+-d start in decimal I/O mode (default)
+.br
+-x start in hexadecimal I/O mode
+.PP
+-n start in unsigned (natural) calculation mode
+.br
+-s start in signed calculation mode (default)
+.br
+-f start in floating-point calculation mode
+.PP
+-p toggle prompt
+.PP
+-e treat the rest of the command line as expression
+.PP
+FILE input file, stdin used if not specified.
+.PP
+Any combination of commands is allowed, last command wins in case of conflict.
+E.g. szg -xnods starts in signed decimal mode.
+.br
+Unknown options and commands are ignored without a warning.
+.SH BACKGROUND
+.B szg
+is a command line calculator, originally for integer arithmetics, inspired by
+.BR bc (1),
+desktop calculators and microcontroller programming. Micros often lack
+floating-point support, so all calculations are integer-based. During
+debugging, one often wishes to simulate calculations with a desktop/GUI
+calculator, only to find everything going floating-point after the first
+division. That's where
+.BR bc (1)
+comes into the picture. But it has no hexadecimal support and its workflow
+is rather cumbersome. Adding 2 to a previous result cannot be done with
+simply typing
+.BR "+ 2 Enter" .
+And how many times have you mistyped something on a desktop calculator
+wishing to undo the last operation? Or wished to have more than one memory?
+.SH DESCRIPTION
+The main features of
+.BR szg (1)
+are:
+.br
+\- command line interface with previous results visible on the screen
+.br
+\- unlimited undo
+.br
+\- decimal, binary, octal and hexadecimal I/O modes
+.br
+\- signed and unsigned integer calculation modes
+.br
+\- floating point mode only upon user request, never upon division
+.br
+\- ability to go on from previous result with incomplete expression
+.br
+\- unlimited amount of user variables
+.PP
+.BR szg (1)
+takes expressions, assignments and commands on stdin and writes the results
+to stdout or the specified output FILE upon pressing
+.BR Enter .
+.SS EXPRESSIONS
+.BR szg (1)
+expressions are built of
+.br
+.B [0-9a-f.,]+
+numbers (arbitrary coma-grouping allowed)
+.br
+.B $[a-z0-9_]+
+user variables
+.br
+.B _
+last result
+.br
+and operators listed below in descending precedence:
+.br
+.B ()
+\   brackets to override operator precedence
+.br
+.B ~ @x
+\ prefix operators        : unary minus, math functions
+.br
+.B ^
+\    power operators         : power
+.br
+.B */%&
+\ multiplicative operators: multiply, divide, modulo, bitwise AND
+.br
+.B +-|
+\  additive operators      : add, substract, bitwise OR
+.PP
+Math functions:
+.B @s @c @a @l @e @r
+= sin cos atan log exp sqrt
+.PP
+Incomplete expressions are where an operand is missing from
+between operators. The last result
+.B _
+is used automatically instead.
+.br
+The ultimate incomplete expression is the empty string, meaning the last result.
+.PP
+Attention with unary minus:
+.br
+.B \-expr
+means substracting expr from the last result
+.B _-expr
+, not the negation of expr.
+For unary minus use the
+.B ~
+(tilde) operator.
+.SS Floating point support
+Floating point numbers can be entered in non-scientific form only.
+Examples:
+.B 2.3  .0456
+.PP
+Floting point mode is activated according to the following rules:
+.br
+\- never upon division
+.br
+\- implicitly, if an entered expression contains a float-format number
+.br
+\- implicitly, if power's (^) 2nd operand is negative
+.br
+\- explicitly, with command F
+.PP
+Floating point numbers are displayed in scientific format only if necessary.
+Switching to floating-point implies switching to decimal I/O mode.
+Once in float mode, the commands
+.B B O X
+(binary, octal, hexadecimal) show you the number once in the respective format,
+then return to decimal IO mode.
+.PP
+Switching back from floating-point mode to either signed or unsigned integer mode
+works with the commands
+.B S
+and
+.B N
+, respectively.
+.SS ASSIGNMENTS
+User-variables can be created on the fly, by assigning an expression to them.
+Their form is a dollar-sign plus any number of lowercase letters, numbers
+and underscores.
+.B $life_universe_everything=6*7
+stores 42 into variable $life_universe_everything, while
+.B $bar=
+stores the last result in $bar.
+.PP
+Command V v or \\v lists all variables with values.
+.SS COMMANDS
+Commands are single upper- or lowercase letters, escape lowercase version with
+backslash \\ between [a-f] to avoid confusion with hex numbers.
+.PP
+B \\b binary I/O mode
+.br
+O \\o o octal I/O mode
+.br
+D \\d decimal I/O mode
+.br
+X \\x x hexadecimal I/O mode
+.PP
+N \\n n unsigned (natural number) calculation mode
+.br
+S \\s s signed calculation mode
+.br
+F \\f floating-point calculation mode
+.PP
+P \\p p toggle prompt
+.br
+U \\u u undo, unlimited depth, no redo
+.br
+V \\v v print all variables with values
+.br
+Q \\q q or ^D (EOF Unix) or ^C (interrupt) to quit
+.PP
+Signed / unsigned calculation modes affect only */% operations and decimal
+IO, nothing else.
+.PP
+By default, a prompt is indicating IO and calculation mode,
+if input is coming from a terminal (no pipe, no input file).
+The prompt is printed to stderr.
+.br
+Uppercase prompts B O D X indicate unsinged mode.
+.br
+Lowercase prompts b o d x f indicate signed/float mode.
+.PP
+Undo does remember changes in calculation or I/O mode.
+.SS COMPOUNDS
+.BR szg (1)
+accepts combinations of expressions or statements with a leading or trailing command or both.
+For example
+.B X fffe+1 D
+switches to hex mode temporarily to evaluate fffe+1 then displays the result 65535 in decimal.
+.SS COMMENTS
+Comments between
+.B #
+and end-of-line.
+.SS INPUT FROM COMMAND LINE
+When using the
+.B szg -e expr
+form, be careful with shell expansion taking place before passing expr to szg.
+Quote when necessary. Examples with Bourne compatible shells:
+.br
+.B szg -e 6 * 7
+will fail spectacularly, as your current dir listing will be substituted for *.
+.br
+.B szg -e 6*7
+may work, except if you have a file called 617 in you current dir,
+resulting in 617 instead of 42.
+.br
+.B szg -e \\\\x ffff \\\\d
+fails as the shell removes the backslashes. Rather use the uppercase version of the commands: szg -e X ffff D
+.SH DIAGNOSTICS
+.BR szg (1)
+prints diagnostic messages to stderr, thus they appear on the terminal by
+default. After the error
+.BR szg (1)
+may ignore the entire input line, or just the wrong part of it, or even
+replace the wrong part with the last result.
+Don't forget to undo in suspicious cases. Worse is better.
+.SS syntax error
+The entered expression cannot be parsed
+.SS unknown command
+Entered lowercase letter does not correspond to a known command
+.SS unknown function
+Unimplemented @x sequence (function)
+.SS division by zero
+Attempt at division by zero
+.SS float modulo
+Attempt at modulo
+.B %
+operation on a floating-point number
+.SS n.a. for negative
+Attempt at math functions @l @r (log sqrt) for a negative number
+.SS n.a. for zero
+Attempt at math function @l (log) for zero
+.SS unable to parse number
+When entering 1.2.3 or 12 in binary mode or 12.34ff in float mode
+.SS variable $foo undefined
+Using undefined user-variable in expression
+.SH SEE ALSO
+.BR lex (1),
+.BR yacc (1),
+.BR bc (1).
+.SH AUTHOR
+SZABO Gergely
+.B <szg@subogero.com>
+.br
+Respect to
+.B Stephen C. Johnson
+the creator of
+.BR yacc (1).
+.SH COPYRIGHT
+This is free software, distributed under the WTFPL license.
+.br
+There is absolutely no warranty.
+.SH BUG REPORTS
+Please send bug reports to the email address above, include
+.B szg
+in the Subject field. 
+.br
+Issues, milestones on
+.B http://github.com/subogero/szg
+.br
+Patches welcome!
+PAKK
+chmod 644 szg.1
+cat <<"PAKK" >>szg.c
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include "arg1.h"
+#include "szg.h"
+#include "output.h"
+#include "grammar.h"
+#include "patterns.h"
+#include "vars.h"
+extern int yyparse(void); /* interpreter main loop */
+
+FILE *yyin;
+
+static void __na(void);
+static void bin (void);
+static void hex (void);
+static void dec (void);
+static void oct (void);
+static void natn(void);
+static void sign(void);
+static void fltn(void);
+static void prmt(void);
+static void quit(void);
+static void vars(void);
+static void undo(void);
+
+const t_callback commands[26] = {
+	__na ,  /* A */
+	bin  ,  /* B */
+	__na ,  /* C */
+	dec  ,  /* D */
+	__na ,  /* E */
+	fltn ,  /* F */
+	__na ,  /* G */
+	usage,  /* H */
+	__na ,  /* I */
+	__na ,  /* J */
+	__na ,  /* K */
+	__na ,  /* L */
+	__na ,  /* M */
+	natn ,  /* N */
+	oct  ,  /* O */
+	prmt ,  /* P */
+	quit ,  /* Q */
+	__na ,  /* R */
+	sign ,  /* S */
+	__na ,  /* T */
+	undo ,  /* U */
+	vars ,  /* V */
+	__na ,  /* W */
+	hex  ,  /* X */
+	__na ,  /* Y */
+	__na ,  /* Z */
+};
+
+static int print_req = 0;
+static int prompt = 0;
+
+/* main */
+int main(int argc, char *argv[])
+{
+	char *filename = NULL;
+	char *command  = NULL;
+	char *expr     = NULL;
+
+	/* Parse arguments */
+	if (argc >= 2) {
+		arg1_eval(argv[1]); /* catch and print help/version and exit */
+		if (*(argv[1]) == '-') {
+			command  = argv[1];
+			if (argc >= 3)
+				filename = argv[2];
+		} else {
+			filename = argv[1];
+		}
+	}
+
+	/* Commands found */
+	if (command != NULL) {
+		int i;
+		for (i = 'a'; i <= 'z'; ++i) {
+			if (strchr(command, i) && commands[i - 'a'] != __na)
+				(commands[i - 'a'])();
+		}
+
+		/* -e EXPR on command line, rest of args into buffer expr */
+		if (strchr(command, 'e')) {
+			int i;
+			int len = 0;
+			for (i = 2; i < argc; ++i)
+				len += strlen(argv[i]) + 1;
+			expr = malloc(len + 2);
+			expr[0] = 0;
+			for (i = 2; i < argc; ++i) {
+				strcat(expr, argv[i]);
+				strcat(expr, i < argc-1 ? " " : "\n");
+			}
+			strcat(expr, "\0\0");
+			filename = NULL;
+		}
+	}
+
+	/* Open input stream; Prompt: tty - yes, script/pipe - no */
+	if (!filename) {
+		yyin = stdin;
+		if (!expr && isatty(fileno(yyin)))
+			prmt();
+	} else {
+		yyin = fopen(filename, "r");
+		if (!yyin) {
+			yyerror("Cannot open input file");
+			exit(1);
+		}
+	}
+
+	/* Run the actual calculator */
+	num_display(&output, 0, prompt);
+	YY_BUFFER_STATE yybs;
+	if (expr) {
+		yybs = yy_scan_buffer(expr, strlen(expr) + 2);
+		yy_switch_to_buffer(yybs);
+	}
+	yyparse();
+	if (expr) {
+		yy_delete_buffer(yybs);
+		free(expr);
+	}
+	if (filename)
+		fclose(yyin);
+	quit();
+}
+
+/* Print a number in the actual base-system */
+void print(void)
+{
+	num_display(&output, print_req, prompt);
+	fflush(NULL);
+	print_req = 0;
+}
+
+/* Request printing */
+void print_on(void)
+{
+	print_req = 1;
+}
+
+/* yacc error callback to indicate syntax error */
+int yyerror(const char *s)
+{
+	fprintf(stderr, s);
+	fprintf(stderr, "\n");
+	return 0;
+}
+
+/* command callbacks */
+static void __na(void) { yyerror("unknown command");                   }
+static void bin (void) { if (num_base(&output,  2))     output_push(); }
+static void oct (void) { if (num_base(&output,  8))     output_push(); }
+static void dec (void) { if (num_base(&output, 10))     output_push(); }
+static void hex (void) { if (num_base(&output, 16))     output_push(); }
+static void natn(void) { num_2type(&output, T_NATURAL); output_push(); }
+static void sign(void) { num_2type(&output, T_SIGNED);  output_push(); }
+static void fltn(void) { num_2type(&output, T_FLOAT);   output_push(); }
+static void prmt(void) { prompt = !prompt;                             }
+static void quit(void) { printf("\r"); exit(0);                        }
+static void vars(void) { vars_dbg();                                   }
+static void undo(void) {                                output_pop();  }
+PAKK
+chmod 644 szg.c
+cat <<"PAKK" >>szg.h
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+*******.**********************************************************************/
+#ifndef __szg
+#define __szg
+
+/* Command callbacks */
+typedef void (*t_callback)(void);
+extern const t_callback commands[26];
+
+/* Print result */
+void print(void);
+void print_on(void);
+int yyerror(const char *s);
+
+#endif
+PAKK
+chmod 644 szg.h
+cat <<"PAKK" >>usage.txt
+Usage: szg [-bodxnsfp] [FILE] | [-h] | [-V]
+       szg -[bodxnsfp]e EXPR
+  -h --help    shows usage and exits
+  -V --version shows version info and exits
+  -b start in I/O mode binary
+  -o start in I/O mode octal
+  -d start in I/O mode decimal (default)
+  -x start in I/O mode hexadecimal
+  -n start in calculation mode unsigned (natural number)
+  -s start in calculation mode signed   (default)
+  -f start in calculation mode floating-point
+  -p toggle prompt
+  -e treat the rest of command line as expression
+
+Command line calculator for 32-bit integers and floats.
+Accepts the following constructs from stdin or input FILE if specified
+or directly as command line arguments after as -e EXPR:
+- math expressions built of .0-9a-f, _ $x |&+-*/^ @x ~ (), eg. 2*(2-5)
+  a-f are used for numbers in hexadecimal mode
+  _   is the result of the last operation
+- $[a-z0-9_]+ are user-defined variables
+- operator precedence: (), ~, ^, */%&, +-|
+- math functions @s @c @a @l @e @r: sin cos atan log exp sqrt
+- assignments to variables $x in form of $foo=expr
+- Commands
+- Compounds of statements and leading or trailing commands
+- whitespaces are ignored (not allowed within numbers)
+- Comments between # and end-of-line
+
+Incomplete expressions and assignments (desktop calculator workflow):
+  Missing numbers are replaced by _ (last result), e.g x=*(+2) means x=_*(_+2)
+  Unary minus is ~expr (tilde), -expr is interpreted as _-expr.
+
+Floating point support:
+  Floating-point numbers are accepted only in non-scientific form.
+  szg stays in integer mode, until you explicitely switch to float mode
+  with command F, or implicitly enter a float-format number (e.g. 2.3)
+  as part of an expression. A division does NOT switch to float mode.
+  Operator ^ (power) switches to float if the 2nd operand is negative.
+  Switching to float activates decimal I/O mode implicitly.
+
+Commands:
+  Single upper-case letters, same as the command line options, except V.
+  V prints all user-defined vairables with values.
+  Alternative forms: G .. Z, \\a .. \\z
+  Use command Q or ^D (EOF on Unix) or ^C (interrupt) to exit.
+
+See man szg for more details.
+PAKK
+chmod 644 usage.txt
+cat <<"PAKK" >>vars.c
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+#include "vars.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+/* Hash-bucket element: pointer to next, key-val. */
+struct list {
+	struct list *next;
+	char *key;
+	struct num n;
+	int defined;
+};
+
+/* hash function */
+/* Hash table with 16 buckets */
+#ifndef VARS_HASHSIZE
+#define VARS_HASHSIZE 4
+#endif
+#define BUCKETS (1u << VARS_HASHSIZE)
+static unsigned char hashfunc(char *key);
+struct list *buckets[BUCKETS];
+static struct list *vars_lookup(char *key, int append);
+static int vars_sort(const void *a, const void *b);
+
+/* Allocate a variable */
+char *vars_alloc(char *key)
+{
+	return vars_lookup(key, 1)->key;
+}
+
+/* Set or allocate variable */
+void vars_set(char *key, struct num *n)
+{
+	struct list *this = vars_lookup(key, 1);
+	if (this) {
+		this->n = *n;
+		this->defined = 1;
+	} else {
+		fprintf(stderr, "unable to allocate vaiable %s\n", key);
+	}  
+}
+
+/* Get variable, n written if found in table, otherwise return 1 */
+int  vars_get(char *key, struct num *n)
+{
+	struct list *this = vars_lookup(key, 0);
+	if (this && this->defined) {
+		*n = this->n;
+		return 0;
+	} else {
+		fprintf(stderr, "variable %s undefined\n", key);
+		return 1;
+	}
+}
+
+/*
+ * Calc hash, iterate list in hash bucket until
+ * a) key found        : return key-val
+ * b) end of list found: append and return key-val or return NULL
+ */
+static struct list *vars_lookup(char *key, int append)
+{
+	int hash = hashfunc(key);
+	struct list *this = buckets[hash];
+	struct list **parent = buckets + hash;
+	while (this) {
+		if (!strcmp(key, this->key)) {
+			return this; /* Yesssssss!!! */
+		} else {
+			parent = &this->next;
+			this = this->next;
+		}
+	}
+	/*
+	 * By now, this is NULL and parent points to the list tail's next pointer.
+	 * Append new key-val to list if required, otherwise bye
+	 */
+	if (append) {
+		*parent = malloc(sizeof(struct list));
+		this = *parent;
+		if (this) {
+			this->next = NULL;
+			this->defined = 0;
+			/* Revert if unable to allocate memory for key */
+			this->key = malloc(strlen(key) + 1);
+			if (this->key) {
+				strcpy(this->key, key);
+			} else {
+				free(this);
+				this = NULL;
+			}
+		}
+	}
+	return this;
+}
+
+/* 4-bit hash functions for string */
+static unsigned char hashfunc(char *key)
+{
+	#ifndef VARS_HASH
+	#define VARS_HASH 2 /* Default hash function rotate */
+	#endif
+	/* 32-bit hash */
+	unsigned long hash = 0;
+	#if   VARS_HASH == 6 //"FNV1a"
+	hash = 2166136261u;
+	while (*key) {
+		hash ^= *key++;
+		hash *= 16777619u;
+	}
+	#elif VARS_HASH == 5 //"SAX"
+	while (*key)
+		hash ^= (hash << 5) + (hash >> 2) + *key++;
+	#elif VARS_HASH == 4 //"BERNSTEINm"
+	while (*key)
+		hash = 33 * hash ^ *key++;
+	#elif VARS_HASH == 3 //"BERNSTEIN"
+	while (*key)
+		hash = 33 * hash + *key++;
+	#elif VARS_HASH == 2 //"ROT"
+	while (*key)
+		hash = (hash << 4) ^ (hash >> 28) ^ *key++;
+	#elif VARS_HASH == 1 //"XOR"
+	while (*key)
+		hash ^= *key++;
+	#else                //"ADD"
+	while (*key)
+		hash += *key++;
+	#endif
+	/* xor-folding for final hash-size */
+	hash = ((hash >> VARS_HASHSIZE) ^ hash) & (BUCKETS - 1);
+}
+
+/* Print all variables in alphabetic order */
+void vars_dbg(void)
+{
+	struct list **vars = NULL; /* Dynamic array of struct list pointers */
+	int n_vars = 0;
+	int i;
+	for (i = 0; i < BUCKETS; ++i) {
+		struct list *this = buckets[i];
+		while (this != NULL) {
+			if (!this->defined)
+				goto this_next;
+			n_vars++;
+			vars = vars == NULL
+			? malloc(n_vars * sizeof(struct list*))
+			: realloc(vars, n_vars * sizeof(struct list*));
+			vars[n_vars - 1] = this;
+		this_next:
+			this = this->next;
+		}
+	}
+	/* Alphabetic sort */
+	qsort(vars, n_vars, sizeof(struct list*), vars_sort);
+	for (i = 0; i < n_vars; ++i) {
+		struct list *this = vars[i];
+		printf("%s = ", this->key);
+		num_print(&this->n, 1, 0, BASE_NA);
+	}
+	if (vars != NULL)
+		free(vars);
+}
+
+/* Alphabetic sort of struct list pointers based on key */
+static int vars_sort(const void *a, const void *b)
+{
+	/* Inputs are actually pointers to struct list pointers */
+	struct list *const *aa = a;
+	struct list *const *bb = b;
+	/* Get to the struct list pointers */
+	struct list *aaa = *aa;
+	struct list *bbb = *bb;
+	/* Compare the struct list key strings */
+	return strcmp(aaa->key, bbb->key);
+}
+PAKK
+chmod 644 vars.c
+cat <<"PAKK" >>vars.h
+/******************************************************************************
+* (c) SZABO Gergely, 2009
+* Free software, distributed under the WTFPL license
+* There is absolutely no warranty.
+******************************************************************************/
+/* Hash table for variable storage */
+#ifndef __vars
+#define __vars
+
+#include "num.h"
+
+char *vars_alloc(char *key);
+void vars_set(char *key, struct num *num);
+int  vars_get(char *key, struct num *num);
+void vars_dbg(void);
+
+#endif
+PAKK
+chmod 644 vars.h
+cat <<"PAKK" >>vars_test.c
+#include "num.h"
+#include "vars.h"
+#include <stdio.h>
+#include <string.h>
+
+struct num n = {
+	.type = T_SIGNED, 
+	.base = 10, 
+};
+
+int main(void)
+{
+	/* Fill up variables identified by strings */
+	#define MAX 20
+	char key[MAX] = { 0, };
+	n.val.s = 24; vars_set("$x", &n);
+	n.val.s = 25; vars_set("$y", &n);
+	n.val.s = 26; vars_set("$z", &n);
+	n.val.s = 1; vars_set("$a", &n);
+	n.val.s = 2; vars_set("$b", &n);
+	n.val.s = 3; vars_set("$c", &n);
+	n.val.s = 1; vars_set("$foo", &n);
+	n.val.s = 2; vars_set("$bar", &n);
+	n.val.s = 3; vars_set("$baz", &n);
+	n.val.s = 4; vars_set("$spam", &n);
+	n.val.s = 5; vars_set("$eggs", &n);
+	n.val.s = 42; vars_set("$lue", &n);
+	n.val.s = 1948; vars_set("$izrael", &n);
+	n.val.s = 1967; vars_set("$hatnapos", &n);
+	n.val.s = 1446; vars_set("$exodus", &n);
+	n.val.s = 225;  vars_set("$egypt", &n);
+	n.val.s = 969;  vars_set("$oldest", &n);
+	n.val.s = 911;  vars_set("$bestcar", &n);
+	n.val.s = 1970; vars_set("$unix", &n);
+	n.val.s = 1991; vars_set("$linux", &n);
+	n.val.s = 2760; vars_set("$stelvio", &n);
+	n.val.s = 2650; vars_set("$gavia", &n);
+	n.val.s = 2291; vars_set("$foscagno", &n);
+	n.val.s = 2150; vars_set("$fuorn", &n);
+	n.val.s = 1852; vars_set("$mortirolo", &n);
+	n.val.s = 900;  vars_set("$prato", &n);
+	n.val.s = 1130; vars_set("$cepina", &n);
+	n.val.s = 1800; vars_set("$livigno", &n);
+	n.val.s = 3798; vars_set("$glockner", &n);
+	n.val.s = 3905; vars_set("$ortler", &n);
+	n.val.s = 3860; vars_set("$zebru", &n);
+	n.val.s = 4167; vars_set("$breithorn", &n);
+	n.val.s = 4563; vars_set("$zumstoa", &n);
+	n.val.s = 4478; vars_set("$matterhorn", &n);
+	n.val.s = 4505; vars_set("$weisshorn", &n);
+	n.val.s = 4545; vars_set("$dom", &n);
+	n.val.s = 4810; vars_set("$montblanc", &n);
+	n.val.s = 8850; vars_set("$everest", &n);
+	n.val.s = 8611; vars_set("$ktwo", &n);
+	n.val.s = 8554; vars_set("$kancsendzonga", &n);
+	n.val.s = 8540; vars_set("$lhotse", &n);
+	vars_dbg();
+
+	/* Let user query variables by strings (chop off LF) */
+	while (fgets(key, MAX, stdin)) {
+		char *lf = strchr(key, '\n');
+		if (lf)
+			*lf = 0;
+		if (!vars_get(key, &n))
+			num_display(&n, 1, 0);
+	}
+	return 0;
+}
+PAKK
+chmod 644 vars_test.c
+cat <<"PAKK" >>version.txt
+szg 1.1
+
+Free software, distributed under the WTFPL license
+Copyright 2009-2013 SZABO Gergely <szg@subogero.com>
+PAKK
+chmod 644 version.txt
