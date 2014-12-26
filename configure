@@ -33,7 +33,7 @@ elif uname -a | egrep "x86_64 GNU/Linux"; then
 elif uname -a | egrep "i.86 GNU/Linux"; then
   OS=l32
 else
-  error
+  OS=l32
 fi
 
 # TARGET w/ or w/o .exe
