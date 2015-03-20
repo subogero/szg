@@ -115,7 +115,7 @@ endif
 # Unix targets compiled on both Windows/Unix
 CC     := gcc
 CFLAGS := -g -Wno-format -Wmissing-prototypes $(CDEFS)
-LIBS   := -lm
+LIBS   := -lm -lreadline
 
 # Windows targets compiled on Windows/Unix
 WC :=
@@ -1447,6 +1447,7 @@ cat <<"PAKK" >>szg.c
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <readline/readline.h>
 #include "arg1.h"
 #include "szg.h"
 #include "output.h"
@@ -1501,13 +1502,13 @@ const t_callback commands[26] = {
 
 static int print_req = 0;
 static int prompt = 0;
+static char *expr = NULL;
 
 /* main */
 int main(int argc, char *argv[])
 {
 	char *filename = NULL;
 	char *command  = NULL;
-	char *expr     = NULL;
 
 	/* Parse arguments */
 	if (argc >= 2) {
@@ -1561,19 +1562,33 @@ int main(int argc, char *argv[])
 
 	/* Run the actual calculator */
 	num_display(&output, 0, prompt);
-	YY_BUFFER_STATE yybs;
-	if (expr) {
-		yybs = yy_scan_buffer(expr, strlen(expr) + 2);
-		yy_switch_to_buffer(yybs);
-	}
 	yyparse();
-	if (expr) {
-		yy_delete_buffer(yybs);
-		free(expr);
-	}
 	if (filename)
 		fclose(yyin);
 	quit();
+}
+
+/* Read input line from argv or stdin via readline */
+void read_input(char *buff, int *bytes, int maxbytes)
+{
+	static expr_done = 0;
+	if (expr && !expr_done) {
+		expr_done = 1;
+		strcpy(buff, expr);
+		*bytes = strlen(expr);
+	} else if (expr_done) {
+		*bytes = 0;
+	} else {
+		char *newline = readline(NULL);
+		if (newline == NULL) {
+			*bytes = 0;
+			return;
+		}
+		strcpy(buff, newline);
+		strcat(buff, "\n");
+		free(newline);
+		*bytes = strlen(buff);
+	}
 }
 
 /* Print a number in the actual base-system */
@@ -1630,6 +1645,10 @@ extern const t_callback commands[26];
 void print(void);
 void print_on(void);
 int yyerror(const char *s);
+void read_input(char *buff, int *bytes, int maxbytes);
+
+#undef YY_INPUT
+#define YY_INPUT(buff,bytes,maxbytes) read_input((buff), &(bytes), (maxbytes))
 
 #endif
 PAKK

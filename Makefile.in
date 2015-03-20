@@ -40,7 +40,7 @@ endif
 # Unix targets compiled on both Windows/Unix
 CC     := gcc
 CFLAGS := -g -Wno-format -Wmissing-prototypes $(CDEFS)
-LIBS   := -lm
+LIBS   := -lm -lreadline
 
 # Windows targets compiled on Windows/Unix
 WC :=
