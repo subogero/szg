@@ -4,6 +4,7 @@
 * There is absolutely no warranty.
 ******************************************************************************/
 %option always-interactive
+
 %{
 #include <stdlib.h>
 #include "output.h"
@@ -58,7 +59,7 @@
 }
 \$[a-z0-9_]+	{
 	print_on();
-	yylval.id = vars_alloc(yytext);
+	yylval.id = (char*)vars_alloc(yytext);
 	return VAR;
 }
 [0-9a-f.,]+	{
