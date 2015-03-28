@@ -22,6 +22,12 @@ which flex || error
 echo --- Checking bison ---
 which bison || error
 
+# readline
+echo --- Checking readline ---
+if [ -f /usr/include/readline/readline.h ]; then
+  READLINE=1
+fi
+
 # Which OS?
 echo --- Checking OS ---
 if env | egrep "PROCESSOR_IDENTIFIER=Intel64"; then
@@ -44,11 +50,11 @@ else
 fi
 echo TARGET = $target
 
-# WC WLIBS W64C W64LIBS
+# WC WFLAGS W64C W64FLAGS
 echo --- Checking Win64 cross compilers ---
 for w64c in $prefix_w64; do
   if which $w64c-gcc; then
-    w64libs="-L/usr/$w64c/lib -I/usr/$w64c/include"
+    w64flags="-L/usr/$w64c/lib -I/usr/$w64c/include -DNO_READLINE"
     break
   else
     w64c=''
@@ -58,7 +64,7 @@ done
 echo --- Checking Win32 cross compilers ---
 for wc in $prefix_w32; do
   if which $wc-gcc; then
-    wlibs="-L/usr/$wc/lib -I/usr/$wc/include"
+    wflags="-L/usr/$wc/lib -I/usr/$wc/include -DNO_READLINE"
     break
   else
     wc=''
@@ -73,11 +79,11 @@ sed -r "s/^(TARGET :=)/& $target/" Makefile.in > Makefile
 if [ "$w64c" ]; then
   echo Printing Windows x64 cross-compiler
   sed -r -e "s/^W64C :=/& $w64c-gcc/" \
-         -e "s,^W64LIBS :=,& $w64libs," \
+         -e "s,^W64FLAGS :=,& $w64flags," \
          -i Makefile
 else
   echo Removing Windows x64 cross-compiler
-  sed "/^W64C :=/,/^W64LIBS :=/d" -i Makefile
+  sed "/^W64C :=/,/^W64FLAGS :=/d" -i Makefile
   sed "/^W64 :=/d" -i Makefile
   sed '/^w64: /,/^\t$(W64C)/d' -i Makefile
 fi
@@ -85,13 +91,19 @@ fi
 if [ "$wc" ]; then
   echo Printing Win32 cross-compiler
   sed -r -e "s/^WC :=/& $wc-gcc/" \
-         -e "s,^WLIBS :=,& $wlibs," \
+         -e "s,^WFLAGS :=,& $wflags," \
          -i Makefile
 else
   echo Removing Win32 cross-compiler
-  sed "/^WC :=/,/^WLIBS :=/d" -i Makefile
+  sed "/^WC :=/,/^WFLAGS :=/d" -i Makefile
   sed "/^WIN :=/d" -i Makefile
   sed '/^win: /,/^\t$(WC)/d' -i Makefile
+fi
+
+if [ -z "$READLINE" ]; then
+  echo --- Removing readline dependency
+  sed 's/-DVARS$/& -DNO_READLINE/' -i Makefile
+  sed 's/ -lreadline$//' -i Makefile
 fi
 
 echo --- Changing install uninstall rules for Windows ---
