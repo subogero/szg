@@ -151,6 +151,7 @@ void read_input(char *buff, int *bytes, int maxbytes)
 	} else if (expr_done) {
 		*bytes = 0;
 	} else if (use_readline) {
+#ifndef NO_READLINE
 		char *newline = readline(ps1);
 		if (newline == NULL) {
 			*bytes = 0;
@@ -162,6 +163,7 @@ void read_input(char *buff, int *bytes, int maxbytes)
 			add_history(newline);
 		free(newline);
 		*bytes = strlen(buff);
+#endif
 	} else {
 		fprintf(stderr, ps1);
 		fflush(NULL);
