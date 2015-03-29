@@ -29,8 +29,8 @@ struct num num_infix(struct num src1, char op, struct num src2);
 struct num num_prefix(char op, struct num src);
 
 int num_parse(struct num *this, char *yytext);
-void num_print(struct num *this, int num, int prompt, char base);
-#define num_display(this,num,prompt) num_print(this,num,prompt,BASE_NA)
+const char *num_print(struct num *this, int num, char base);
+#define num_display(this,num) num_print(this,num,BASE_NA)
 
 int num_base(struct num *this, char base);
 

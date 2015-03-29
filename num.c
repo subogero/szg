@@ -169,7 +169,7 @@ int num_parse(struct num *this, char *yytext) {
 }
 
 /* Print */
-void num_print(struct num *this, int num, int prompt, char base) {
+const char *num_print(struct num *this, int num, char base) {
 	/* Print formats with optional prompt */
 	char type;
 	int index = 0;
@@ -214,8 +214,7 @@ void num_print(struct num *this, int num, int prompt, char base) {
 			break;
 		}
 	}
-	if (prompt)
-		fprintf(stderr, prompts[index]);
+	return prompts[index];
 }
 
 /* Set, or, print in, base */
@@ -224,7 +223,7 @@ int num_base(struct num *this, char base)
 	if (base != 2 && base != 8 && base != 10 && base != 16)
 		return 0;
 	if (this->type == T_FLOAT) {
-		num_print(this, 1, 0, base);
+		num_print(this, 1, base);
 		return 0;
 	} else {
 		this->base = base;

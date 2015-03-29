@@ -821,7 +821,7 @@ int num_parse(struct num *this, char *yytext) {
 }
 
 /* Print */
-void num_print(struct num *this, int num, int prompt, char base) {
+const char *num_print(struct num *this, int num, char base) {
 	/* Print formats with optional prompt */
 	char type;
 	int index = 0;
@@ -866,8 +866,7 @@ void num_print(struct num *this, int num, int prompt, char base) {
 			break;
 		}
 	}
-	if (prompt)
-		fprintf(stderr, prompts[index]);
+	return prompts[index];
 }
 
 /* Set, or, print in, base */
@@ -876,7 +875,7 @@ int num_base(struct num *this, char base)
 	if (base != 2 && base != 8 && base != 10 && base != 16)
 		return 0;
 	if (this->type == T_FLOAT) {
-		num_print(this, 1, 0, base);
+		num_print(this, 1, base);
 		return 0;
 	} else {
 		this->base = base;
@@ -963,8 +962,8 @@ struct num num_infix(struct num src1, char op, struct num src2);
 struct num num_prefix(char op, struct num src);
 
 int num_parse(struct num *this, char *yytext);
-void num_print(struct num *this, int num, int prompt, char base);
-#define num_display(this,num,prompt) num_print(this,num,prompt,BASE_NA)
+const char *num_print(struct num *this, int num, char base);
+#define num_display(this,num) num_print(this,num,BASE_NA)
 
 int num_base(struct num *this, char base);
 
@@ -1056,7 +1055,7 @@ void output_show(void)
 {
 	struct stack_t *this = stack_top;
 	while (this != NULL) {
-		num_display(&this->data, 1, 0);
+		num_display(&this->data, 1);
 		this = this->link;
 	}
 }
@@ -1463,6 +1462,7 @@ cat <<"PAKK" >>szg.c
 #include <stdio.h>
 #ifndef NO_READLINE
 #include <readline/readline.h>
+#include <readline/history.h>
 #endif
 #include "arg1.h"
 #include "szg.h"
@@ -1519,6 +1519,8 @@ const t_callback commands[26] = {
 static int print_req = 0;
 static int prompt = 0;
 static char *expr = NULL;
+static const char *ps1 = NULL;
+static char use_readline;
 
 /* main */
 int main(int argc, char *argv[])
@@ -1575,9 +1577,17 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 	}
-
+	/* readline or not? */
+	use_readline = isatty(fileno(yyin));
+#ifdef NO_READLINE
+	use_readline = 0;
+#endif
 	/* Run the actual calculator */
-	num_display(&output, 0, prompt);
+	ps1 = num_display(&output, 0);
+	if (prompt && !use_readline) {
+		fprintf(stderr, ps1);
+		fflush(NULL);
+	}
 	yyparse();
 	if (filename)
 		fclose(yyin);
@@ -1588,10 +1598,6 @@ int main(int argc, char *argv[])
 void read_input(char *buff, int *bytes, int maxbytes)
 {
 	static expr_done = 0;
-	int use_readline = isatty(fileno(yyin));
-#ifdef NO_READLINE
-	use_readline = 0;
-#endif
 	if (expr && !expr_done) {
 		expr_done = 1;
 		strcpy(buff, expr);
@@ -1599,16 +1605,20 @@ void read_input(char *buff, int *bytes, int maxbytes)
 	} else if (expr_done) {
 		*bytes = 0;
 	} else if (use_readline) {
-		char *newline = readline(NULL);
+		char *newline = readline(ps1);
 		if (newline == NULL) {
 			*bytes = 0;
 			return;
 		}
 		strcpy(buff, newline);
 		strcat(buff, "\n");
+		if (*newline)
+			add_history(newline);
 		free(newline);
 		*bytes = strlen(buff);
 	} else {
+		fprintf(stderr, ps1);
+		fflush(NULL);
 		if (fgets(buff, maxbytes, yyin) == NULL) {
 			*bytes = 0;
 			return;
@@ -1620,7 +1630,7 @@ void read_input(char *buff, int *bytes, int maxbytes)
 /* Print a number in the actual base-system */
 void print(void)
 {
-	num_display(&output, print_req, prompt);
+	ps1 = num_display(&output, print_req);
 	fflush(NULL);
 	print_req = 0;
 }
@@ -1894,7 +1904,7 @@ void vars_dbg(void)
 	for (i = 0; i < n_vars; ++i) {
 		struct list *this = vars[i];
 		printf("%s = ", this->key);
-		num_print(&this->n, 1, 0, BASE_NA);
+		num_print(&this->n, 1, BASE_NA);
 	}
 	if (vars != NULL)
 		free(vars);

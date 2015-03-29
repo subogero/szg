@@ -8,6 +8,7 @@
 #include <stdio.h>
 #ifndef NO_READLINE
 #include <readline/readline.h>
+#include <readline/history.h>
 #endif
 #include "arg1.h"
 #include "szg.h"
@@ -64,6 +65,8 @@ const t_callback commands[26] = {
 static int print_req = 0;
 static int prompt = 0;
 static char *expr = NULL;
+static const char *ps1 = NULL;
+static char use_readline;
 
 /* main */
 int main(int argc, char *argv[])
@@ -120,9 +123,17 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 	}
-
+	/* readline or not? */
+	use_readline = isatty(fileno(yyin));
+#ifdef NO_READLINE
+	use_readline = 0;
+#endif
 	/* Run the actual calculator */
-	num_display(&output, 0, prompt);
+	ps1 = num_display(&output, 0);
+	if (prompt && !use_readline) {
+		fprintf(stderr, ps1);
+		fflush(NULL);
+	}
 	yyparse();
 	if (filename)
 		fclose(yyin);
@@ -133,10 +144,6 @@ int main(int argc, char *argv[])
 void read_input(char *buff, int *bytes, int maxbytes)
 {
 	static expr_done = 0;
-	int use_readline = isatty(fileno(yyin));
-#ifdef NO_READLINE
-	use_readline = 0;
-#endif
 	if (expr && !expr_done) {
 		expr_done = 1;
 		strcpy(buff, expr);
@@ -144,16 +151,20 @@ void read_input(char *buff, int *bytes, int maxbytes)
 	} else if (expr_done) {
 		*bytes = 0;
 	} else if (use_readline) {
-		char *newline = readline(NULL);
+		char *newline = readline(ps1);
 		if (newline == NULL) {
 			*bytes = 0;
 			return;
 		}
 		strcpy(buff, newline);
 		strcat(buff, "\n");
+		if (*newline)
+			add_history(newline);
 		free(newline);
 		*bytes = strlen(buff);
 	} else {
+		fprintf(stderr, ps1);
+		fflush(NULL);
 		if (fgets(buff, maxbytes, yyin) == NULL) {
 			*bytes = 0;
 			return;
@@ -165,7 +176,7 @@ void read_input(char *buff, int *bytes, int maxbytes)
 /* Print a number in the actual base-system */
 void print(void)
 {
-	num_display(&output, print_req, prompt);
+	ps1 = num_display(&output, print_req);
 	fflush(NULL);
 	print_req = 0;
 }
