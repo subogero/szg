@@ -55,7 +55,7 @@ void output_show(void)
 {
 	struct stack_t *this = stack_top;
 	while (this != NULL) {
-		num_display(&this->data, 1, 0);
+		num_display(&this->data, 1);
 		this = this->link;
 	}
 }

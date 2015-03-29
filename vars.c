@@ -161,7 +161,7 @@ void vars_dbg(void)
 	for (i = 0; i < n_vars; ++i) {
 		struct list *this = vars[i];
 		printf("%s = ", this->key);
-		num_print(&this->n, 1, 0, BASE_NA);
+		num_print(&this->n, 1, BASE_NA);
 	}
 	if (vars != NULL)
 		free(vars);
