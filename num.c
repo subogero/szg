@@ -181,10 +181,12 @@ const char *num_print(struct num *this, int num, char base) {
 		"%B\n",   "%o\n",   "%d\n",   "%x\n",   /* signed */
 		"%B\n",   "%o\n",   "%g\n",   "%x\n",   /* float */
 	};
+#define CP "\x1b[92m" /* Green prompt ANSI color code */
+#define C0 "\x1b[0m"  /* Reset color after prompt */
 	static const char *prompts[] = {
-		"B ",     "O ",     "D ",     "X ",
-		"b ",     "o ",     "d ",     "x ",
-		"f ",     "f ",     "f ",     "f ",
+		CP"B "C0, CP"O "C0, CP"D "C0, CP"X "C0,
+		CP"b "C0, CP"o "C0, CP"d "C0, CP"x "C0,
+		CP"f "C0, CP"f "C0, CP"f "C0, CP"f "C0,
 	};
 	/* Find format */
 	if (base == BASE_NA) base = this->base;
