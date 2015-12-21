@@ -109,7 +109,7 @@ install:
 	@cp -f $(BIN)/$(TARGET) $(BINDIR)
 	@mkdir -p $(MANDIR)
 	@cp -f $(MANPAGE) $(MANDIR)
-	@gzip --best $(MANDIR)/$(MANPAGE)
+	@gzip -f --best $(MANDIR)/$(MANPAGE)
 	@cp -f $(WIN)/$(WARGET) /cygdrive/c/WINDOWS
 	@cp -f $(W64)/$(WARGET) /cygdrive/c/WINDOWS
 
