@@ -131,7 +131,6 @@ int main(int argc, char *argv[])
 	/* Run the actual calculator */
 	ps1 = num_display(&output, 0);
 	if (prompt && !use_readline) {
-		fprintf(stderr, ps1);
 		fflush(NULL);
 	}
 	yyparse();
