@@ -6,6 +6,7 @@
 ##############################################################################
 prefix_w32='i686-w64-mingw32 i686-pc-mingw32 i586-mingw32msvc'
 prefix_w64='x86_64-w64-mingw32 amd64-mingw32msvc'
+prefix_arm='arm-linux-androideabi'
 
 error() {
   echo Error "$@"
@@ -50,6 +51,17 @@ else
 fi
 echo TARGET = $target
 
+# AC - ARM COMPILER
+echo --- Checking ARM Android cross compilers ---
+for ac in $prefix_arm; do
+  if which $ac-gcc; then
+    aflags="-L/usr/$ac/lib -I/usr/$ac/include -DNO_READLINE"
+    break
+  else
+    ac=''
+  fi
+done
+
 # WC WFLAGS W64C W64FLAGS
 echo --- Checking Win64 cross compilers ---
 for w64c in $prefix_w64; do
@@ -75,6 +87,17 @@ done
 echo --- Printing targets ---
 sed -r "s/^(TARGET :=)/& $target/" Makefile.in > Makefile
 [ "$wc" -o "$w64c" ] || sed -r '/^WARGET :=/d' -i Makefile
+
+if [ "$ac" ]; then
+  echo Printing Android ARM cross-compiler
+  sed -r -e "s,^AC :=,& $ac-gcc," \
+         -e "s,^AFLAGS :=,& $aflags," \
+         -i Makefile
+else
+  echo Removing Android ARM cross-compiler
+  sed "/^AC :=/,/^ALIBS :=/d" -i Makefile
+  sed '/^arm: /,/^\t$(AC)/d' -i Makefile
+fi
 
 if [ "$w64c" ]; then
   echo Printing Windows x64 cross-compiler

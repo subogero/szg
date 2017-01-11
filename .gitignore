@@ -1,4 +1,5 @@
 /.bin
+/.arm
 /.win
 /.w64
 /.release
